@@ -3,27 +3,10 @@ name = "push"
 version = "0.1.0"
 edition = "2024"
 
-
 [dependencies]
 midir = "0.10.3"
-# anyhow = "*"
 thiserror = "2.0.17"
-# gameloop = "*"
 push2_display = { git = "https://github.com/mbracher/push2_display.git" }
 embedded-graphics = "0.8.1"
-# rodio = "*"
-# tray-item = "*"
 ron = "0.11.0"
 serde = { version = "1.0.228", features = ["derive"] }
-# notify-debouncer-full = "*"
-#tokio = { version = "1", features = ["full"]}
-# rspotify = {version = "*", default-features = false, features = ["client-ureq", "ureq-rustls-tls"] , optional = true}
-# open = {version = "*", optional = true}
-
-# [build-dependencies]
-# winres = "*"
-
-# [features]
-# default = ["spotify"]
-# console = []
-# spotify = ["dep:rspotify", "dep:open"]

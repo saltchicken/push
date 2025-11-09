@@ -15,7 +15,7 @@ use std::sync::mpsc::channel;
 use std::{error, thread, time};
 
 fn main() -> Result<(), Box<dyn error::Error>> {
-    // --- 1. MIDI Setup (Unchanged) ---
+    // --- MIDI Setup  ---
     let (tx, rx) = channel();
     let mut midi_in = MidiInput::new("push2_input_demo")?;
     midi_in.ignore(Ignore::None);
@@ -82,17 +82,17 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     println!("Opening output connection to: {}", out_port_name);
     let mut conn_out = midi_out.connect(out_port, "push2-output-connection")?;
 
-    // --- 2. Display Setup (Unchanged) ---
+    // --- Display Setup ---
     let mut display = Push2Display::new()?;
     let text_style = MonoTextStyle::new(&FONT_10X20, Bgr565::WHITE);
     let mut position = Point::new(0, 70);
     let mut step = 4;
 
-    // --- 3. Create our ButtonMap ---
+    // --- Create ButtonMap ---
     let button_map = ButtonMap::new()?;
     println!("\nConnection open. Press any pad...");
 
-    // ‼️ --- 4. THE NEW MAIN LOOP ---
+    // ‼️ --- Main Loop ---
     loop {
         while let Ok(message) = rx.try_recv() {
             if message.len() < 3 {
@@ -145,7 +145,8 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             }
         }
 
-        // --- 5. Original Display Logic (Unchanged) ---
+        // --- Original Display Logic ---
+        // TODO: Replace this with something that is not a test case
         display.clear(Bgr565::BLACK)?;
         Rectangle::new(Point::zero(), display.size())
             .into_styled(PrimitiveStyle::with_stroke(Bgr565::WHITE, 1))

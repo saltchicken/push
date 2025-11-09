@@ -1,4 +1,4 @@
-( // This defines a struct/tuple
+( 
     note_map: {
         // All 64 pads
         92 : Pad0x7, 93 : Pad1x7, 94 : Pad2x7, 95 : Pad3x7, 96 : Pad4x7, 97 : Pad5x7, 98 : Pad6x7, 99 : Pad7x7,
@@ -32,6 +32,6 @@
         76 : Control76,
         77 : Control77,
         78 : Control78,
-        79 : Control79, // ‼️ Fixed typo (was 78)
+        79 : Control79,
     },
 )
