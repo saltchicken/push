@@ -24,6 +24,7 @@ pub enum ControlName {
     Control21,
     Control24,
     Control25,
+    Control48,
 }
 
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]

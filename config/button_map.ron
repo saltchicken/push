@@ -16,6 +16,7 @@
         21 : Control21,
         24 : Control24,
         25 : Control25,
+        48 : Control48,
     },
 
     encoder_map: {

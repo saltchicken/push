@@ -103,7 +103,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             let address = message[1];
             let velocity = message[2];
 
-            // println!("{}", status);
+            println!(
+                "Received message: status: {}, address: {}, velocity: {}",
+                status, address, velocity
+            );
 
             // We match on the STATUS byte first!
             match status {
@@ -130,11 +133,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                         if velocity > 0 {
                             // Button down
                             println!("--- Button {:?} PRESSED ---", control_name);
-                            conn_out.send(&[144, address, 127])?; // 127 = Bright White
+                            // conn_out.send(&[144, address, 127])?; // 127 = Bright White
                         } else {
                             // Button up
                             println!("--- Button {:?} RELEASED ---", control_name);
-                            conn_out.send(&[144, address, 0])?; // 0 = Off
+                            // conn_out.send(&[144, address, 0])?; // 0 = Off
                         }
                     } else if let Some(encoder_name) = button_map.get_encoder(address) {
                         println!(
