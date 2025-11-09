@@ -17,7 +17,7 @@ use std::{error, thread, time};
 fn main() -> Result<(), Box<dyn error::Error>> {
     // --- MIDI Setup  ---
     let (tx, rx) = channel();
-    let mut midi_in = MidiInput::new("push2_input_demo")?;
+    let mut midi_in = MidiInput::new("push2")?;
     midi_in.ignore(Ignore::None);
     let in_ports = midi_in.ports();
     let in_port = match in_ports.len() {
@@ -92,7 +92,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let button_map = ButtonMap::new()?;
     println!("\nConnection open. Press any pad...");
 
-    // ‼️ --- Main Loop ---
+    // --- Main Loop ---
     loop {
         while let Ok(message) = rx.try_recv() {
             if message.len() < 3 {
@@ -103,19 +103,21 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             let address = message[1];
             let velocity = message[2];
 
+            // println!("{}", status);
+
             // We match on the STATUS byte first!
             match status {
                 // --- NOTE ON / NOTE OFF (144 or 128) ---
                 144 | 128 => {
                     // This is a pad, so we check the note_map
-                    if let Some(note_name) = button_map.get_note(address) {
+                    if let Some(pad_coord) = button_map.get_note(address) {
                         if status == 144 && velocity > 0 {
                             // Note On
-                            println!("--- Pad {:?} PRESSED ---", note_name);
+                            println!("--- Pad ({}, {}) PRESSED ---", pad_coord.x, pad_coord.y);
                             conn_out.send(&[144, address, 122])?; // 122 = White
                         } else {
                             // Note Off (128 or 144 w/ vel 0)
-                            println!("--- Pad {:?} RELEASED ---", note_name);
+                            println!("--- Pad ({}, {}) RELEASED ---", pad_coord.x, pad_coord.y);
                             conn_out.send(&[128, address, 0])?; // 0 = Off
                         }
                     }
