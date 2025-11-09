@@ -1,3 +1,6 @@
+mod button_map;
+use button_map::ButtonMap;
+
 use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_10X20},
     pixelcolor::Bgr565,
@@ -5,21 +8,17 @@ use embedded_graphics::{
     primitives::{PrimitiveStyle, Rectangle},
     text::Text,
 };
+use midir::{Ignore, MidiInput, MidiOutput};
 use push2_display::Push2Display;
-use std::{error, thread, time};
-
-// ‼️ --- NEW IMPORTS ---
-use midir::{Ignore, MidiInput, MidiOutput}; // Added MidiOutput
 use std::io::{Write, stdin, stdout};
 use std::sync::mpsc::channel;
-// ‼️ --- END NEW IMPORTS ---
+use std::{error, thread, time};
 
 fn main() -> Result<(), Box<dyn error::Error>> {
-    // --- 1. MIDI Input Setup (Same as before) ---
+    // --- 1. MIDI Setup (Unchanged) ---
     let (tx, rx) = channel();
     let mut midi_in = MidiInput::new("push2_input_demo")?;
     midi_in.ignore(Ignore::None);
-
     let in_ports = midi_in.ports();
     let in_port = match in_ports.len() {
         0 => return Err("No MIDI input ports found!".into()),
@@ -53,11 +52,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         },
         (),
     )?;
-
-    // ‼️ --- 2. MIDI Output Setup (NEW!) ---
     let midi_out = MidiOutput::new("push2_output_demo")?;
-
-    // --- Port Selection for Output ---
     let out_ports = midi_out.ports();
     let out_port = match out_ports.len() {
         0 => return Err("No MIDI output ports found!".into()),
@@ -83,103 +78,83 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 .ok_or("Invalid output port index")?
         }
     };
-
     let out_port_name = midi_out.port_name(out_port)?;
     println!("Opening output connection to: {}", out_port_name);
-
-    // Connect to the output port.
-    // We get a `conn_out` object that we can use to send messages.
     let mut conn_out = midi_out.connect(out_port, "push2-output-connection")?;
-    // ‼️ --- End MIDI Output Setup ---
 
-    // --- 3. Original Display Setup ---
+    // --- 2. Display Setup (Unchanged) ---
     let mut display = Push2Display::new()?;
     let text_style = MonoTextStyle::new(&FONT_10X20, Bgr565::WHITE);
     let mut position = Point::new(0, 70);
     let mut step = 4;
 
+    // --- 3. Create our ButtonMap ---
+    let button_map = ButtonMap::new()?;
     println!("\nConnection open. Press any pad...");
 
+    // ‼️ --- 4. THE NEW MAIN LOOP ---
     loop {
-        // --- 4. Check for MIDI messages (Modified!) ---
         while let Ok(message) = rx.try_recv() {
             if message.len() < 3 {
                 continue;
             }
 
             let status = message[0];
-            let note = message[1];
+            let address = message[1];
             let velocity = message[2];
 
+            // We match on the STATUS byte first!
             match status {
-                // 144 = "Note On"
-                144 => {
-                    if velocity > 0 {
-                        println!("--- Pad {} PRESSED (vel {}) ---", note, velocity);
-
-                        // ‼️ SEND MESSAGE TO LIGHT UP PAD
-                        // We send a "Note On" message back to the *same note*.
-                        // The "velocity" of the *output* message determines the color.
-                        // 122 is a bright white. Try other values!
-                        let color_message = &[144, note, 122];
-                        conn_out.send(color_message)?;
-                    } else {
-                        // "Note On" with velocity 0 is a "Note Off"
-                        println!("--- Pad {} RELEASED ---", note);
-
-                        // ‼️ SEND MESSAGE TO TURN OFF PAD
-                        // A "Note Off" (128) or "Note On" with 0 velocity works.
-                        let off_message = &[128, note, 0];
-                        conn_out.send(off_message)?;
+                // --- NOTE ON / NOTE OFF (144 or 128) ---
+                144 | 128 => {
+                    // This is a pad, so we check the note_map
+                    if let Some(note_name) = button_map.get_note(address) {
+                        if status == 144 && velocity > 0 {
+                            // Note On
+                            println!("--- Pad {:?} PRESSED ---", note_name);
+                            conn_out.send(&[144, address, 122])?; // 122 = White
+                        } else {
+                            // Note Off (128 or 144 w/ vel 0)
+                            println!("--- Pad {:?} RELEASED ---", note_name);
+                            conn_out.send(&[128, address, 0])?; // 0 = Off
+                        }
                     }
                 }
 
-                // 128 = "Note Off"
-                128 => {
-                    println!("--- Pad {} RELEASED ---", note);
-
-                    // ‼️ SEND MESSAGE TO TURN OFF PAD
-                    let off_message = &[128, note, 0];
-                    conn_out.send(off_message)?;
-                }
-
-                // 176 = "Control Change" (knobs, buttons above screen)
+                // --- CONTROL CHANGE (176) ---
                 176 => {
-                    if velocity == 127 {
-                        // 127 = button press
-                        println!("--- Button {} PRESSED ---", note);
-                        // ‼️ SEND MESSAGE TO LIGHT UP BUTTON
-                        // Control Change buttons also use "Note On" for their lights.
-                        // Note numbers for buttons are different (e.g., 20-29, 102-117)
-                        let on_message = &[144, note, 127]; // 127 = bright white
-                        conn_out.send(on_message)?;
-                    } else {
-                        // 0 = button release
-                        println!("--- Button {} RELEASED ---", note);
-                        // ‼️ SEND MESSAGE TO TURN OFF BUTTON
-                        let off_message = &[144, note, 0]; // 0 = off
-                        conn_out.send(off_message)?;
+                    // This could be a button OR an encoder, so we check both maps
+                    if let Some(control_name) = button_map.get_control(address) {
+                        if velocity > 0 {
+                            // Button down
+                            println!("--- Button {:?} PRESSED ---", control_name);
+                            conn_out.send(&[144, address, 127])?; // 127 = Bright White
+                        } else {
+                            // Button up
+                            println!("--- Button {:?} RELEASED ---", control_name);
+                            conn_out.send(&[144, address, 0])?; // 0 = Off
+                        }
+                    } else if let Some(encoder_name) = button_map.get_encoder(address) {
+                        println!(
+                            "--- Encoder {:?} TWISTED, value {} ---",
+                            encoder_name, velocity
+                        );
                     }
                 }
-
-                _ => {} // Ignore aftertouch, etc. for now
+                _ => {} // Ignore other messages
             }
         }
 
         // --- 5. Original Display Logic (Unchanged) ---
         display.clear(Bgr565::BLACK)?;
-
         Rectangle::new(Point::zero(), display.size())
             .into_styled(PrimitiveStyle::with_stroke(Bgr565::WHITE, 1))
             .draw(&mut display)?;
-
         position.x += step;
         if position.x >= display.size().width as i32 || position.x <= 0 {
             step *= -1;
         }
-
         Text::new("Hello!", position, text_style).draw(&mut display)?;
-
         display.flush()?;
         thread::sleep(time::Duration::from_millis(1000 / 60));
     }
