@@ -15,16 +15,7 @@ const NOTE_OFF: u8 = 128;
 fn main() -> Result<(), Box<dyn error::Error>> {
     // --- Config Loading ---
 
-    let app_config = AppConfig::load_from_path("config/app_config.ron").map_err(|e| {
-        println!("Failed to load 'config/app_config.ron': {}", e);
-        println!("Please create one with 'midi_input_port' and 'midi_output_port' fields.");
-        e
-    })?;
-
-    println!("Successfully loaded configs.");
-
-    // --- Push2 Library Setup ---
-    let mut push2 = Push2::new(app_config)?;
+    let mut push2 = Push2::new()?;
 
     // --- Display Setup (Application Logic) ---
     let text_style = MonoTextStyle::new(&FONT_10X20, Bgr565::WHITE);

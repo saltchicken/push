@@ -40,6 +40,7 @@ pub struct Push2 {
     /// The MIDI output connection, for sending light/color data
     pub midi_out: MidiOutputConnection,
     button_map: ButtonMap,
+    app_config: AppConfig,
     event_rx: Receiver<Vec<u8>>,
     _conn_in: MidiInputConnection<()>,
 }
@@ -48,10 +49,12 @@ impl Push2 {
     /// Connects to the Push 2 display and MIDI ports.
     ///
     /// The user is responsible for loading and providing the `AppConfig`
-    pub fn new(config: AppConfig) -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<Self, Box<dyn Error>> {
+        let app_config = AppConfig::new()?;
+
         // --- MIDI Setup ---
         let (tx, rx) = mpsc::channel();
-        let midi_handler = MidiHandler::new(&config, tx)?;
+        let midi_handler = MidiHandler::new(&app_config, tx)?;
 
         let button_map = ButtonMap::new()?;
 
@@ -63,6 +66,7 @@ impl Push2 {
             display,
             midi_out: conn_out,
             button_map,
+            app_config,
             event_rx: rx,
             _conn_in,
         })

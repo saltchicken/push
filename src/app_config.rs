@@ -1,13 +1,10 @@
 use serde::Deserialize;
-use std::fs;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
-    #[error("Failed to read config file {0}: {1}")]
-    ReadError(String, #[source] Box<std::io::Error>),
-    #[error("Failed to parse config file {0}: {1}")]
-    ParseError(String, #[source] Box<ron::error::SpannedError>),
+    #[error("Failed to parse config file: {0}")]
+    ParseError(#[from] Box<ron::error::SpannedError>),
 }
 
 #[derive(Deserialize)]
@@ -17,12 +14,9 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
-    pub fn load_from_path(path: &str) -> Result<Self, ConfigError> {
-        let config_string = fs::read_to_string(path)
-            .map_err(|e| ConfigError::ReadError(path.into(), Box::new(e)))?;
-        let config: AppConfig = ron::from_str(&config_string)
-            .map_err(|e| ConfigError::ParseError(path.into(), Box::new(e)))?;
+    pub fn new() -> Result<Self, ConfigError> {
+        let config_string = include_str!("../config/app_config.ron");
+        let config: AppConfig = ron::from_str(config_string).map_err(Box::new)?;
         Ok(config)
     }
 }
-
