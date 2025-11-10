@@ -1,14 +1,11 @@
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::fs;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ButtonMapError {
-    #[error("Failed to read config file {0}: {1}")]
-    ReadError(String, #[source] Box<std::io::Error>),
-    #[error("Failed to parse config file {0}: {1}")]
-    ParseError(String, #[source] Box<ron::error::SpannedError>),
+    #[error("Failed to parse embedded button_map.ron: {0}")]
+    ParseError(#[from] Box<ron::error::SpannedError>),
 }
 
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -48,15 +45,14 @@ pub struct ButtonMap {
     control_map: HashMap<u8, ControlName>,
     encoder_map: HashMap<u8, EncoderName>,
 }
-
 impl ButtonMap {
-    pub fn load_from_path(path: &str) -> Result<Self, ButtonMapError> {
-        let config_string = fs::read_to_string(path)
-            .map_err(|e| ButtonMapError::ReadError(path.into(), Box::new(e)))?;
-        let map: ButtonMap = ron::from_str(&config_string)
-            .map_err(|e| ButtonMapError::ParseError(path.into(), Box::new(e)))?;
+    pub fn new() -> Result<Self, ButtonMapError> {
+        let map_string = include_str!("../config/button_map.ron");
+
+        let map: ButtonMap = ron::from_str(map_string).map_err(Box::new)?;
         Ok(map)
     }
+
     pub fn get_note(&self, address: u8) -> Option<PadCoord> {
         self.note_map.get(&address).copied()
     }
@@ -69,4 +65,3 @@ impl ButtonMap {
         self.encoder_map.get(&address).copied()
     }
 }
-

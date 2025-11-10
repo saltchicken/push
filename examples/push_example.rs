@@ -1,4 +1,4 @@
-use push2::{AppConfig, ButtonMap, Push2, Push2Event};
+use push2::{AppConfig, Push2, Push2Event};
 
 use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_10X20},
@@ -21,11 +21,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         e
     })?;
 
-    let button_map = ButtonMap::load_from_path("config/button_map.ron")?;
     println!("Successfully loaded configs.");
 
     // --- Push2 Library Setup ---
-    let mut push2 = Push2::new(app_config, button_map)?;
+    let mut push2 = Push2::new(app_config)?;
 
     // --- Display Setup (Application Logic) ---
     let text_style = MonoTextStyle::new(&FONT_10X20, Bgr565::WHITE);

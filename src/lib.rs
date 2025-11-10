@@ -48,11 +48,12 @@ impl Push2 {
     /// Connects to the Push 2 display and MIDI ports.
     ///
     /// The user is responsible for loading and providing the `AppConfig`
-    /// and `ButtonMap`.
-    pub fn new(config: AppConfig, button_map: ButtonMap) -> Result<Self, Box<dyn Error>> {
+    pub fn new(config: AppConfig) -> Result<Self, Box<dyn Error>> {
         // --- MIDI Setup ---
         let (tx, rx) = mpsc::channel();
         let midi_handler = MidiHandler::new(&config, tx)?;
+
+        let button_map = ButtonMap::new()?;
 
         // --- Display Setup ---
         let display = Push2Display::new()?;
@@ -128,4 +129,3 @@ impl Push2 {
         None
     }
 }
-
