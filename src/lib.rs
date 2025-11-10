@@ -15,10 +15,10 @@ use std::error::Error;
 use std::sync::mpsc::{self, Receiver};
 
 // --- MIDI Message Constants ---
-const NOTE_ON: u8 = 144;
-const NOTE_OFF: u8 = 128;
-const CONTROL_CHANGE: u8 = 176;
-const PITCH_BEND: u8 = 224;
+pub const NOTE_ON: u8 = 144;
+pub const NOTE_OFF: u8 = 128;
+pub const CONTROL_CHANGE: u8 = 176;
+pub const PITCH_BEND: u8 = 224;
 
 /// High-level events from the Ableton Push 2
 #[derive(Debug, Clone, Copy)]

@@ -9,9 +9,6 @@ use embedded_graphics::{
 };
 use std::{error, thread, time};
 
-const NOTE_ON: u8 = 144;
-const NOTE_OFF: u8 = 128;
-
 fn main() -> Result<(), Box<dyn error::Error>> {
     // --- Config Loading ---
 
@@ -34,12 +31,12 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                     println!("--- Pad ({}, {}) PRESSED ---", coord.x, coord.y);
 
                     let address = 36 + coord.x + (7 - coord.y) * 8;
-                    push2.midi_out.send(&[NOTE_ON, address, 122])?; // 122 = White
+                    push2.midi_out.send(&[push2::NOTE_ON, address, 122])?; // 122 = White
                 }
                 Push2Event::PadReleased { coord } => {
                     println!("--- Pad ({}, {}) RELEASED ---", coord.x, coord.y);
                     let address = 36 + coord.x + (7 - coord.y) * 8;
-                    push2.midi_out.send(&[NOTE_OFF, address, 0])?; // 0 = Off
+                    push2.midi_out.send(&[push2::NOTE_OFF, address, 0])?; // 0 = Off
                 }
                 Push2Event::ButtonPressed { name, .. } => {
                     println!("--- Button {:?} PRESSED ---", name);
