@@ -1,4 +1,4 @@
-use push2::{AppConfig, ButtonMap, Push2, Push2Event}; // ‼️ Import our new library
+use push2::{AppConfig, ButtonMap, Push2, Push2Event};
 
 use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_10X20},
@@ -9,22 +9,18 @@ use embedded_graphics::{
 };
 use std::{error, thread, time};
 
-// ‼️ MIDI constants are now in the library,
-// but we need them here to send messages back
 const NOTE_ON: u8 = 144;
 const NOTE_OFF: u8 = 128;
-// const CONTROL_CHANGE: u8 = 176; // Not used in this example's sends
 
 fn main() -> Result<(), Box<dyn error::Error>> {
     // --- Config Loading ---
-    // ‼️ Call load_from_path, not new
+
     let app_config = AppConfig::load_from_path("config/app_config.ron").map_err(|e| {
         println!("Failed to load 'config/app_config.ron': {}", e);
         println!("Please create one with 'midi_input_port' and 'midi_output_port' fields.");
         e
     })?;
 
-    // ‼️ Call load_from_path, not new
     let button_map = ButtonMap::load_from_path("config/button_map.ron")?;
     println!("Successfully loaded configs.");
 
@@ -40,16 +36,13 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     // --- Main Loop ---
     loop {
-        // ‼️ MODIFIED: Poll for high-level events from the library
         while let Some(event) = push2.poll_event() {
             println!("Received event: {:?}", event);
 
-            // ‼️ MODIFIED: Match on the new Push2Event enum
             match event {
                 Push2Event::PadPressed { coord, .. } => {
                     println!("--- Pad ({}, {}) PRESSED ---", coord.x, coord.y);
-                    // ‼️ Use push2.midi_out to send messages
-                    // ‼️ NOTE: This assumes a specific mapping, you may need to adjust
+
                     let address = 36 + coord.x + (7 - coord.y) * 8;
                     push2.midi_out.send(&[NOTE_ON, address, 122])?; // 122 = White
                 }
@@ -73,7 +66,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         }
 
         // --- Original Display Logic (Application-specific) ---
-        // ‼️ Use push2.display
+
         push2.display.clear(Bgr565::BLACK)?;
         Rectangle::new(Point::zero(), push2.display.size())
             .into_styled(PrimitiveStyle::with_stroke(Bgr565::WHITE, 1))

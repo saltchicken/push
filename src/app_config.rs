@@ -18,7 +18,6 @@ pub struct AppConfig {
 
 impl AppConfig {
     pub fn load_from_path(path: &str) -> Result<Self, ConfigError> {
-        // ‼️ Use the 'path' argument here
         let config_string = fs::read_to_string(path)
             .map_err(|e| ConfigError::ReadError(path.into(), Box::new(e)))?;
         let config: AppConfig = ron::from_str(&config_string)
@@ -26,3 +25,4 @@ impl AppConfig {
         Ok(config)
     }
 }
+

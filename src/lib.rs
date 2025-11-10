@@ -1,5 +1,3 @@
-// ‼️ This is the library entry point (was main.rs)
-
 // --- Module Declarations ---
 pub mod app_config;
 pub mod button_map;
@@ -7,7 +5,6 @@ pub mod display;
 pub mod midi_handler;
 
 // --- Public API Re-exports ---
-// Re-export the key types your library user will need
 pub use app_config::{AppConfig, ConfigError};
 pub use button_map::{ButtonMap, ButtonMapError, ControlName, EncoderName, PadCoord};
 pub use display::{Push2Display, Push2DisplayError};
@@ -39,7 +36,6 @@ pub enum Push2Event {
 
 /// Main struct for interfacing with the Ableton Push 2
 pub struct Push2 {
-    /// The display, for drawing
     pub display: Push2Display,
     /// The MIDI output connection, for sending light/color data
     pub midi_out: MidiOutputConnection,
@@ -132,3 +128,4 @@ impl Push2 {
         None
     }
 }
+

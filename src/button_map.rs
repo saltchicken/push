@@ -51,7 +51,6 @@ pub struct ButtonMap {
 
 impl ButtonMap {
     pub fn load_from_path(path: &str) -> Result<Self, ButtonMapError> {
-        // ‼️ Use the 'path' argument here
         let config_string = fs::read_to_string(path)
             .map_err(|e| ButtonMapError::ReadError(path.into(), Box::new(e)))?;
         let map: ButtonMap = ron::from_str(&config_string)
@@ -70,3 +69,4 @@ impl ButtonMap {
         self.encoder_map.get(&address).copied()
     }
 }
+
