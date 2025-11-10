@@ -10,27 +10,103 @@
         36 : (x: 0, y: 7), 37 : (x: 1, y: 7), 38 : (x: 2, y: 7), 39 : (x: 3, y: 7), 40 : (x: 4, y: 7), 41 : (x: 5, y: 7), 42 : (x: 6, y: 7), 43 : (x: 7, y: 7),
     },
     control_map: {
-        // Buttons that send Control Change messages
-        29 : Control29,
-        20 : Control20,
-        21 : Control21,
-        24 : Control24,
-        25 : Control25,
-        48 : Control48,
-    },
+        // Transport
+        3  : TapTempo,
+        9  : Metronome,
+        29 : Stop,
+        85 : Play,
+        86 : Record,
+        89 : Automate,
+        90 : FixedLength,
 
+        // Editing
+        118: Delete,
+        119: Undo,
+        35 : Convert,
+        117: DoubleLoop,
+        116: Quantize,
+        88 : Duplicate,
+        87 : New,
+
+        // Mixing
+        60 : Mute,
+        61 : Solo,
+        28 : Master,
+
+        // Upper Row (above pads)
+        102: UpperRow1,
+        103: UpperRow2,
+        104: UpperRow3,
+        105: UpperRow4,
+        106: UpperRow5,
+        107: UpperRow6,
+        108: UpperRow7,
+        109: UpperRow8,
+
+        // Lower Row (below screen)
+        20 : LowerRow1,
+        21 : LowerRow2,
+        22 : LowerRow3,
+        23 : LowerRow4,
+        24 : LowerRow5,
+        25 : LowerRow6,
+        26 : LowerRow7,
+        27 : LowerRow8,
+
+        // Note Repeater Grid
+        43 : Beat1_32t,
+        42 : Beat1_32,
+        41 : Beat1_16t,
+        40 : Beat1_16,
+        39 : Beat1_8t,
+        38 : Beat1_8,
+        37 : Beat1_4t,
+        36 : Beat1_4,
+
+        // Mode
+        30 : Setup,
+        59 : User,
+        52 : AddDevice,
+        53 : AddTrack,
+        110: Device,
+        112: Mix,
+        111: Browse,
+        113: Clip,
+        58 : Scale,
+        31 : Layout,
+        50 : Note,
+        51 : Session,
+
+        // Navigation
+        46 : Up,
+        47 : Down,
+        44 : Left,
+        45 : Right,
+        62 : PageLeft,
+        63 : PageRight,
+        55 : OctaveUp,
+        54 : OctaveDown,
+
+        // Modifiers & Other
+        56 : Repeat,
+        57 : Accent,
+        49 : Shift,
+        48 : Select,
+    },
     encoder_map: {
-        // Knobs that send Control Change messages
-        14 : Control14,
-        15 : Control15,
-        71 : Control71,
-        72 : Control72,
-        73 : Control73,
-        74 : Control74,
-        75 : Control75,
-        76 : Control76,
-        77 : Control77,
-        78 : Control78,
-        79 : Control79,
+        // Top Knobs
+        14 : Tempo,
+        15 : Swing,
+        // 8 Track Knobs
+        71 : Track1,
+        72 : Track2,
+        73 : Track3,
+        74 : Track4,
+        75 : Track5,
+        76 : Track6,
+        77 : Track7,
+        78 : Track8,
+        // Master Knob
+        79 : Master,
     },
 )
