@@ -1,4 +1,4 @@
-use push2::{AppConfig, Push2, Push2Event};
+use push2::{Push2, Push2Event};
 
 use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_10X20},

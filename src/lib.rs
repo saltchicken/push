@@ -40,7 +40,6 @@ pub struct Push2 {
     /// The MIDI output connection, for sending light/color data
     pub midi_out: MidiOutputConnection,
     button_map: ButtonMap,
-    app_config: AppConfig,
     event_rx: Receiver<Vec<u8>>,
     _conn_in: MidiInputConnection<()>,
 }
@@ -66,7 +65,6 @@ impl Push2 {
             display,
             midi_out: conn_out,
             button_map,
-            app_config,
             event_rx: rx,
             _conn_in,
         })
