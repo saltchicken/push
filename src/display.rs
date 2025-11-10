@@ -17,10 +17,6 @@ pub enum Push2DisplayError {
     #[error("Ableton Push2 Not found")]
     Push2NotFound,
 
-    /// Represents all other cases of `std::io::Error`.
-    #[error(transparent)]
-    IOError(#[from] std::io::Error),
-
     #[error(transparent)]
     USBError(#[from] rusb::Error),
 }
