@@ -7,10 +7,6 @@ edition = "2024"
 name = "push2"
 path = "src/lib.rs"
 
-[[bin]]
-name = "push_example"
-path = "src/bin/push_example.rs"
-
 [dependencies]
 midir = "0.10.3"
 thiserror = "2.0.17"
