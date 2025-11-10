@@ -5,7 +5,6 @@ use embedded_graphics_core::{
     prelude::*,
 };
 use rusb::{Context, Device, DeviceDescriptor, DeviceHandle, UsbContext};
-// use std::convert::TryInto;
 use thiserror::Error;
 
 pub struct Push2Display {
