@@ -20,6 +20,10 @@ use embedded_graphics::{
 use std::sync::mpsc::channel;
 use std::{error, thread, time};
 
+const NOTE_ON: u8 = 144;
+const NOTE_OFF: u8 = 128;
+const CONTROL_CHANGE: u8 = 176;
+
 fn main() -> Result<(), Box<dyn error::Error>> {
     let app_config = AppConfig::new().map_err(|e| {
         println!("Failed to load 'config/app_config.ron': {}", e);
@@ -60,33 +64,35 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             // We match on the STATUS byte first!
             match status {
                 // --- NOTE ON / NOTE OFF (144 or 128) ---
-                144 | 128 => {
+                NOTE_ON | NOTE_OFF => {
                     // This is a pad, so we check the note_map
                     if let Some(pad_coord) = button_map.get_note(address) {
-                        if status == 144 && velocity > 0 {
+                        if status == NOTE_ON && velocity > 0 {
                             // Note On
                             println!("--- Pad ({}, {}) PRESSED ---", pad_coord.x, pad_coord.y);
-                            midi_handler.conn_out.send(&[144, address, 122])?; // 122 = White
+                            midi_handler.conn_out.send(&[NOTE_ON, address, 122])?; // 122 = White
                         } else {
                             // Note Off (128 or 144 w/ vel 0)
                             println!("--- Pad ({}, {}) RELEASED ---", pad_coord.x, pad_coord.y);
-                            midi_handler.conn_out.send(&[128, address, 0])?; // 0 = Off
+                            midi_handler.conn_out.send(&[NOTE_OFF, address, 0])?; // 0 = Off
                         }
                     }
                 }
 
                 // --- CONTROL CHANGE (176) ---
-                176 => {
+                CONTROL_CHANGE => {
                     // This could be a button OR an encoder, so we check both maps
                     if let Some(control_name) = button_map.get_control(address) {
                         if velocity > 0 {
                             // Button down
                             println!("--- Button {:?} PRESSED ---", control_name);
-                            // midi_handler.conn_out.send(&[144, address, 127])?; // 127 = Bright White
+                            midi_handler
+                                .conn_out
+                                .send(&[CONTROL_CHANGE, address, 127])?; // 127 = Bright White
                         } else {
                             // Button up
                             println!("--- Button {:?} RELEASED ---", control_name);
-                            // midi_handler.conn_out.send(&[144, address, 0])?; // 0 = Off
+                            midi_handler.conn_out.send(&[CONTROL_CHANGE, address, 0])?; // 0 = Off
                         }
                     } else if let Some(encoder_name) = button_map.get_encoder(address) {
                         println!(
@@ -114,3 +120,4 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         thread::sleep(time::Duration::from_millis(1000 / 60));
     }
 }
+
