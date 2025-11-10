@@ -22,9 +22,7 @@ impl MidiHandler {
         let mut midi_in = MidiInput::new("push2")?;
         midi_in.ignore(Ignore::None);
 
-
         let in_port = Self::select_input_port(&midi_in, &config.midi_input_port)?;
-
 
         let in_port_name = midi_in.port_name(&in_port)?;
         println!("Opening input connection to: {}", in_port_name);
@@ -39,11 +37,9 @@ impl MidiHandler {
         )?;
 
         // --- Output Connection ---
-        let midi_out = MidiOutput::new("push2_output_demo")?;
-
+        let midi_out = MidiOutput::new("push2_output")?;
 
         let out_port = Self::select_output_port(&midi_out, &config.midi_output_port)?;
-
 
         let out_port_name = midi_out.port_name(&out_port)?;
         println!("Opening output connection to: {}", out_port_name);
@@ -54,7 +50,6 @@ impl MidiHandler {
     }
 
     /// Finds the configured input port, or falls back to manual selection.
-
     fn select_input_port(
         midi_in: &MidiInput,
         config_port_name: &str,
@@ -102,7 +97,6 @@ impl MidiHandler {
     }
 
     /// Finds the configured output port, or falls back to manual selection.
-
     fn select_output_port(
         midi_out: &MidiOutput,
         config_port_name: &str,
@@ -149,3 +143,4 @@ impl MidiHandler {
         }
     }
 }
+
