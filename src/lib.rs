@@ -18,6 +18,7 @@ use std::sync::mpsc::{self, Receiver};
 const NOTE_ON: u8 = 144;
 const NOTE_OFF: u8 = 128;
 const CONTROL_CHANGE: u8 = 176;
+const PITCH_BEND: u8 = 224;
 
 /// High-level events from the Ableton Push 2
 #[derive(Debug, Clone, Copy)]
@@ -32,6 +33,8 @@ pub enum Push2Event {
     ButtonReleased { name: ControlName },
     /// An encoder was twisted
     EncoderTwisted { name: EncoderName, value: u8 },
+    /// The touch slider was moved
+    SliderMoved { value: u16 },
 }
 
 /// Main struct for interfacing with the Ableton Push 2
@@ -71,20 +74,25 @@ impl Push2 {
     }
 
     /// Polls for the next high-level `Push2Event`.
-    /// This is non-blocking.
+    /// This is non-blocking
     pub fn poll_event(&self) -> Option<Push2Event> {
         while let Ok(message) = self.event_rx.try_recv() {
-            if message.len() < 3 {
+            if message.is_empty() {
                 continue;
             }
+
             let status = message[0];
-            let address = message[1];
-            let velocity = message[2];
 
             // Try to parse the raw MIDI message into a high-level event
             let event = match status {
                 // --- NOTE ON / NOTE OFF (144 or 128) ---
                 NOTE_ON | NOTE_OFF => {
+                    if message.len() < 3 {
+                        continue;
+                    }
+                    let address = message[1];
+                    let velocity = message[2];
+
                     if let Some(pad_coord) = self.button_map.get_note(address) {
                         if status == NOTE_ON && velocity > 0 {
                             Some(Push2Event::PadPressed {
@@ -98,8 +106,15 @@ impl Push2 {
                         None // Unknown note
                     }
                 }
+
                 // --- CONTROL CHANGE (176) ---
                 CONTROL_CHANGE => {
+                    if message.len() < 3 {
+                        continue;
+                    }
+                    let address = message[1];
+                    let velocity = message[2];
+
                     if let Some(control_name) = self.button_map.get_control(address) {
                         if velocity > 0 {
                             Some(Push2Event::ButtonPressed {
@@ -118,6 +133,21 @@ impl Push2 {
                         None // Unknown CC
                     }
                 }
+
+                // --- PITCH BEND (224) ---
+                PITCH_BEND => {
+                    if message.len() < 3 {
+                        continue;
+                    }
+                    let lsb = message[1]; // 7 bits of data
+                    let msb = message[2]; // 7 bits of data
+
+                    // Combine LSB and MSB into a 14-bit value (0-16383)
+                    let value = ((msb as u16) << 7) | (lsb as u16);
+
+                    Some(Push2Event::SliderMoved { value })
+                }
+
                 _ => None, // Ignore other messages
             };
 
@@ -126,7 +156,6 @@ impl Push2 {
                 return event;
             }
         }
-
         // No events in the queue
         None
     }

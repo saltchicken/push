@@ -52,6 +52,9 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 Push2Event::EncoderTwisted { name, value } => {
                     println!("--- Encoder {:?} TWISTED, value {} ---", name, value);
                 }
+                Push2Event::SliderMoved { value } => {
+                    println!("--- Slider MOVED, value {} ---", value);
+                }
             }
         }
 
