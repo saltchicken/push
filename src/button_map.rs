@@ -50,26 +50,14 @@ pub struct ButtonMap {
 }
 
 impl ButtonMap {
-    pub fn new() -> Result<Self, ButtonMapError> {
-        let config_path = "config/button_map.ron";
-        println!("Loading button map from: {}", config_path);
-
-        let config_string = fs::read_to_string(config_path)
-            .map_err(|e| ButtonMapError::ReadError(config_path.into(), Box::new(e)))?;
-
+    pub fn load_from_path(path: &str) -> Result<Self, ButtonMapError> {
+        // ‼️ Use the 'path' argument here
+        let config_string = fs::read_to_string(path)
+            .map_err(|e| ButtonMapError::ReadError(path.into(), Box::new(e)))?;
         let map: ButtonMap = ron::from_str(&config_string)
-            .map_err(|e| ButtonMapError::ParseError(config_path.into(), Box::new(e)))?;
-
-        println!(
-            "Successfully loaded {} note, {} control, and {} encoder mappings.",
-            map.note_map.len(),
-            map.control_map.len(),
-            map.encoder_map.len()
-        );
-
+            .map_err(|e| ButtonMapError::ParseError(path.into(), Box::new(e)))?;
         Ok(map)
     }
-
     pub fn get_note(&self, address: u8) -> Option<PadCoord> {
         self.note_map.get(&address).copied()
     }
@@ -82,4 +70,3 @@ impl ButtonMap {
         self.encoder_map.get(&address).copied()
     }
 }
-

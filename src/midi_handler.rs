@@ -11,7 +11,7 @@ use std::sync::mpsc::Sender;
 /// `_conn_in` is kept to ensure it stays alive (RAII).
 /// `conn_out` is public so `main.rs` can send messages.
 pub struct MidiHandler {
-    _conn_in: MidiInputConnection<()>,
+    pub _conn_in: MidiInputConnection<()>,
     pub conn_out: MidiOutputConnection,
 }
 
@@ -143,4 +143,3 @@ impl MidiHandler {
         }
     }
 }
-

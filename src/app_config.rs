@@ -17,16 +17,12 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
-    pub fn new() -> Result<Self, ConfigError> {
-        let config_path = "config/app_config.ron";
-        println!("Loading app config from: {}", config_path);
-        let config_string = fs::read_to_string(config_path)
-            .map_err(|e| ConfigError::ReadError(config_path.into(), Box::new(e)))?;
-
+    pub fn load_from_path(path: &str) -> Result<Self, ConfigError> {
+        // ‼️ Use the 'path' argument here
+        let config_string = fs::read_to_string(path)
+            .map_err(|e| ConfigError::ReadError(path.into(), Box::new(e)))?;
         let config: AppConfig = ron::from_str(&config_string)
-            .map_err(|e| ConfigError::ParseError(config_path.into(), Box::new(e)))?;
-
-        println!("Successfully loaded app config.");
+            .map_err(|e| ConfigError::ParseError(path.into(), Box::new(e)))?;
         Ok(config)
     }
 }
