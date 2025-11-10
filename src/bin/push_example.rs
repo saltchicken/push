@@ -1,9 +1,7 @@
-use push::{
-    AppConfig, ButtonMap, Push2, Push2Event,
-}; // ‼️ Import our new library
+use push2::{AppConfig, ButtonMap, Push2, Push2Event}; // ‼️ Import our new library
 
 use embedded_graphics::{
-    mono_font::{ascii::FONT_10X20, MonoTextStyle},
+    mono_font::{MonoTextStyle, ascii::FONT_10X20},
     pixelcolor::Bgr565,
     prelude::*,
     primitives::{PrimitiveStyle, Rectangle},
@@ -45,7 +43,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         // ‼️ MODIFIED: Poll for high-level events from the library
         while let Some(event) = push2.poll_event() {
             println!("Received event: {:?}", event);
-            
+
             // ‼️ MODIFIED: Match on the new Push2Event enum
             match event {
                 Push2Event::PadPressed { coord, .. } => {
@@ -88,7 +86,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
         Text::new("Hello!", position, text_style).draw(&mut push2.display)?;
         push2.display.flush()?;
-        
+
         thread::sleep(time::Duration::from_millis(1000 / 60));
     }
 }

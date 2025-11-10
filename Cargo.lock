@@ -280,7 +280,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "push"
+name = "push2"
 version = "0.1.0"
 dependencies = [
  "embedded-graphics",
