@@ -1,0 +1,4 @@
+(
+    midi_input_port: "Ableton Push 2:Ableton Push 2 Live Port 32:0",
+    midi_output_port: "Ableton Push 2:Ableton Push 2 Live Port 32:0"
+)

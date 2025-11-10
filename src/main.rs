@@ -1,5 +1,13 @@
+mod app_config;
 mod button_map;
+mod display;
+mod midi_handler;
+
+use app_config::AppConfig;
 use button_map::ButtonMap;
+use display::Push2Display;
+
+use midi_handler::MidiHandler;
 
 use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_10X20},
@@ -8,80 +16,20 @@ use embedded_graphics::{
     primitives::{PrimitiveStyle, Rectangle},
     text::Text,
 };
-use midir::{Ignore, MidiInput, MidiOutput};
-mod display;
-use display::Push2Display;
-use std::io::{Write, stdin, stdout};
+
 use std::sync::mpsc::channel;
 use std::{error, thread, time};
 
 fn main() -> Result<(), Box<dyn error::Error>> {
+    let app_config = AppConfig::new().map_err(|e| {
+        println!("Failed to load 'config/app_config.ron': {}", e);
+        println!("Please create one with 'midi_input_port' and 'midi_output_port' fields.");
+        e
+    })?;
     // --- MIDI Setup  ---
     let (tx, rx) = channel();
-    let mut midi_in = MidiInput::new("push2")?;
-    midi_in.ignore(Ignore::None);
-    let in_ports = midi_in.ports();
-    let in_port = match in_ports.len() {
-        0 => return Err("No MIDI input ports found!".into()),
-        1 => {
-            println!(
-                "Choosing the only available input port: {}",
-                midi_in.port_name(&in_ports[0])?
-            );
-            &in_ports[0]
-        }
-        _ => {
-            println!("\nAvailable input ports:");
-            for (i, port) in in_ports.iter().enumerate() {
-                println!("{}: {}", i, midi_in.port_name(port)?);
-            }
-            print!("Please select port for Ableton Push 2 INPUT: ");
-            stdout().flush()?;
-            let mut input = String::new();
-            stdin().read_line(&mut input)?;
-            let port_index: usize = input.trim().parse()?;
-            in_ports.get(port_index).ok_or("Invalid input port index")?
-        }
-    };
-    let in_port_name = midi_in.port_name(in_port)?;
-    println!("Opening input connection to: {}", in_port_name);
-    let _conn_in = midi_in.connect(
-        in_port,
-        "push2-input-connection",
-        move |_stamp, message, _| {
-            tx.send(message.to_vec()).unwrap();
-        },
-        (),
-    )?;
-    let midi_out = MidiOutput::new("push2_output_demo")?;
-    let out_ports = midi_out.ports();
-    let out_port = match out_ports.len() {
-        0 => return Err("No MIDI output ports found!".into()),
-        1 => {
-            println!(
-                "Choosing the only available output port: {}",
-                midi_out.port_name(&out_ports[0])?
-            );
-            &out_ports[0]
-        }
-        _ => {
-            println!("\nAvailable output ports:");
-            for (i, port) in out_ports.iter().enumerate() {
-                println!("{}: {}", i, midi_out.port_name(port)?);
-            }
-            print!("Please select port for Ableton Push 2 OUTPUT: ");
-            stdout().flush()?;
-            let mut input = String::new();
-            stdin().read_line(&mut input)?;
-            let port_index: usize = input.trim().parse()?;
-            out_ports
-                .get(port_index)
-                .ok_or("Invalid output port index")?
-        }
-    };
-    let out_port_name = midi_out.port_name(out_port)?;
-    println!("Opening output connection to: {}", out_port_name);
-    let mut conn_out = midi_out.connect(out_port, "push2-output-connection")?;
+
+    let mut midi_handler = MidiHandler::new(&app_config, tx)?;
 
     // --- Display Setup ---
     let mut display = Push2Display::new()?;
@@ -118,11 +66,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                         if status == 144 && velocity > 0 {
                             // Note On
                             println!("--- Pad ({}, {}) PRESSED ---", pad_coord.x, pad_coord.y);
-                            conn_out.send(&[144, address, 122])?; // 122 = White
+                            midi_handler.conn_out.send(&[144, address, 122])?; // 122 = White
                         } else {
                             // Note Off (128 or 144 w/ vel 0)
                             println!("--- Pad ({}, {}) RELEASED ---", pad_coord.x, pad_coord.y);
-                            conn_out.send(&[128, address, 0])?; // 0 = Off
+                            midi_handler.conn_out.send(&[128, address, 0])?; // 0 = Off
                         }
                     }
                 }
@@ -134,11 +82,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                         if velocity > 0 {
                             // Button down
                             println!("--- Button {:?} PRESSED ---", control_name);
-                            // conn_out.send(&[144, address, 127])?; // 127 = Bright White
+                            // midi_handler.conn_out.send(&[144, address, 127])?; // 127 = Bright White
                         } else {
                             // Button up
                             println!("--- Button {:?} RELEASED ---", control_name);
-                            // conn_out.send(&[144, address, 0])?; // 0 = Off
+                            // midi_handler.conn_out.send(&[144, address, 0])?; // 0 = Off
                         }
                     } else if let Some(encoder_name) = button_map.get_encoder(address) {
                         println!(
