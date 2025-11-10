@@ -9,7 +9,8 @@ use embedded_graphics::{
     text::Text,
 };
 use midir::{Ignore, MidiInput, MidiOutput};
-use push2_display::Push2Display;
+mod display;
+use display::Push2Display;
 use std::io::{Write, stdin, stdout};
 use std::sync::mpsc::channel;
 use std::{error, thread, time};
