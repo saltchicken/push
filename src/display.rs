@@ -10,6 +10,7 @@ use thiserror::Error;
 pub struct Push2Display {
     handle: DeviceHandle<Context>,
     frame_buffer: Box<[u16]>,
+    transfer_buffer: Vec<u8>,
 }
 
 #[derive(Error, Debug)]
@@ -44,41 +45,40 @@ impl Push2Display {
 
         handle.claim_interface(0)?;
         let buffer: Box<[u16]> = vec![0; DISPLAY_WIDTH * DISPLAY_HEIGHT].into_boxed_slice();
+        let transfer_buffer = vec![0u8; BYTES_PER_LINE * DISPLAY_HEIGHT];
 
         Ok(Push2Display {
             handle,
             frame_buffer: buffer,
+            transfer_buffer,
         })
     }
 
     /// Writes the frame buffer to the display. If no frame arrives in 2 seconds, the display is turned black
-    pub fn flush(&self) -> Result<(), Push2DisplayError> {
+    pub fn flush(&mut self) -> Result<(), Push2DisplayError> {
         use std::time::Duration;
         let timeout = Duration::from_secs(1);
+        self.update_transfer_buffer();
 
-        let tranfer_buffer = self.masked_frame_buffer();
         self.handle
             .write_bulk(PUSH2_BULK_EP_OUT, &HEADER, timeout)?;
         self.handle
-            .write_bulk(PUSH2_BULK_EP_OUT, &tranfer_buffer, timeout)?;
+            .write_bulk(PUSH2_BULK_EP_OUT, &self.transfer_buffer, timeout)?;
 
         Ok(())
     }
 
-    fn masked_frame_buffer(&self) -> [u8; BYTES_PER_LINE * DISPLAY_HEIGHT] {
-        let mut masked_buffer: [u8; BYTES_PER_LINE * DISPLAY_HEIGHT] =
-            [0; BYTES_PER_LINE * DISPLAY_HEIGHT];
+    fn update_transfer_buffer(&mut self) {
         for r in 0..DISPLAY_HEIGHT {
             for c in 0..DISPLAY_WIDTH {
                 let i = r * DISPLAY_WIDTH + c;
                 let b: [u8; 2] = u16::to_le_bytes(self.frame_buffer[i]);
                 let di = r * BYTES_PER_LINE + c * 2;
-                masked_buffer[di] = b[0] ^ MASK[di % 4];
-                masked_buffer[di + 1] = b[1] ^ MASK[(di + 1) % 4];
+
+                self.transfer_buffer[di] = b[0] ^ MASK[di % 4];
+                self.transfer_buffer[di + 1] = b[1] ^ MASK[(di + 1) % 4];
             }
         }
-
-        masked_buffer
     }
 }
 
