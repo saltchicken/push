@@ -45,6 +45,7 @@ pub struct Push2 {
     /// The MIDI output connection, for sending light/color data
     pub midi_out: MidiOutputConnection,
     pub button_map: ButtonMap,
+    pub state: Push2State,
     event_rx: Receiver<Vec<u8>>,
     _conn_in: MidiInputConnection<()>,
 }
@@ -70,9 +71,15 @@ impl Push2 {
             display,
             midi_out: conn_out,
             button_map,
+            state: Push2State::new(),
             event_rx: rx,
             _conn_in,
         })
+    }
+
+    pub fn update_state(&mut self, event: &Push2Event) -> Result<(), midir::SendError> {
+        self.state
+            .update_from_event(event, &mut self.midi_out, &self.button_map)
     }
 
     /// Polls for the next high-level `Push2Event`.

@@ -1,4 +1,4 @@
-use push2::{Push2, Push2Event, Push2State};
+use push2::{Push2, Push2Event};
 
 use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_10X20},
@@ -13,7 +13,6 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     // --- Config Loading ---
 
     let mut push2 = Push2::new()?;
-    let mut state = Push2State::new();
 
     // --- Display Setup (Application Logic) ---
     let text_style = MonoTextStyle::new(&FONT_10X20, Bgr565::WHITE);
@@ -27,7 +26,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         while let Some(event) = push2.poll_event() {
             println!("Received event: {:?}", event);
 
-            state.update_from_event(&event, &mut push2.midi_out, &push2.button_map)?;
+            match push2.update_state(&event) {
+                Ok(()) => (),
+                Err(e) => println!("Error updating state: {}", e),
+            }
 
             match event {
                 Push2Event::PadPressed { coord, .. } => {
