@@ -97,13 +97,14 @@ impl Push2 {
         name: ControlName,
         light: u8,
     ) -> Result<(), midir::SendError> {
+        println!("Setting {:?} light to {}", name, light);
         // We are assuming the control's CC address is the same as its Note address for LED control.
         // This holds true for many buttons (Play, Record, Stop, etc.).
         if let Some(address) = self.button_map.get_control_address(name) {
             let message = if light == 0 {
-                [NOTE_OFF, address, 0]
+                [CONTROL_CHANGE, address, 0]
             } else {
-                [NOTE_ON, address, light]
+                [CONTROL_CHANGE, address, light]
             };
             self.midi_out.send(&message)
         } else {
