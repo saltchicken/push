@@ -48,11 +48,16 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                     debug!("--- Button {:?} RELEASED ---", name);
                     push2.set_button_light(name, 0)?;
                 }
-                Push2Event::EncoderTwisted { name, value } => {
-                    trace!("--- Encoder {:?} TWISTED, raw value {} ---", name, value);
-
-                    let current_value = push2.state.encoders.get(&name).map_or(0, |s| s.value);
-                    debug!("    New tracked value for {:?}: {}", name, current_value);
+                Push2Event::EncoderTwisted {
+                    name,
+                    value,
+                    raw_delta,
+                } => {
+                    trace!(
+                        "--- Encoder {:?} TWISTED, raw value {} ---",
+                        name, raw_delta
+                    );
+                    debug!("    New tracked value for {:?}: {}", name, value);
                 }
                 Push2Event::SliderMoved { value } => {
                     debug!("--- Slider MOVED, value {} ---", value);

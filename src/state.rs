@@ -72,13 +72,15 @@ impl Push2State {
                 let button = self.buttons.entry(*name).or_default();
                 button.velocity = 0;
             }
-            crate::Push2Event::EncoderTwisted { name, value } => {
+            crate::Push2Event::EncoderTwisted {
+                name, raw_delta, ..
+            } => {
                 let state = self.encoders.entry(*name).or_default();
                 // Convert Push 2's relative value (1-63 = CW, 65-127 = CCW)
-                let delta = if *value > 64 {
-                    -((128 - *value) as i32)
+                let delta = if *raw_delta > 64 {
+                    -((128 - *raw_delta) as i32)
                 } else {
-                    *value as i32
+                    *raw_delta as i32
                 };
                 let new_value = state.value.saturating_add(delta);
                 state.value = new_value.clamp(0, 127);

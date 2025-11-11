@@ -55,7 +55,11 @@ pub enum Push2Event {
     /// A control button was released
     ButtonReleased { name: ControlName },
     /// An encoder was twisted
-    EncoderTwisted { name: EncoderName, value: u8 },
+    EncoderTwisted {
+        name: EncoderName,
+        raw_delta: u8,
+        value: i32,
+    },
     /// The touch slider was moved
     SliderMoved { value: u16 },
 }
@@ -194,7 +198,8 @@ impl Push2 {
                     } else if let Some(encoder_name) = self.button_map.get_encoder(address) {
                         Some(Push2Event::EncoderTwisted {
                             name: encoder_name,
-                            value: velocity,
+                            raw_delta: velocity,
+                            value: 0,
                         })
                     } else {
                         None // Unknown CC
@@ -219,8 +224,11 @@ impl Push2 {
             };
 
             // If we parsed a valid event, return it
-            if let Some(parsed_event) = event {
+            if let Some(mut parsed_event) = event {
                 self.state.update_from_event(&parsed_event);
+                if let Push2Event::EncoderTwisted { name, value, .. } = &mut parsed_event {
+                    *value = self.state.encoders.get(name).map_or(0, |s| s.value);
+                }
                 return Some(parsed_event);
             }
         }
