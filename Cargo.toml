@@ -2,6 +2,7 @@
 name = "push2"
 version = "0.1.0"
 edition = "2024"
+build = "build.rs"
 
 [lib]
 name = "push2"
@@ -15,3 +16,7 @@ embedded-graphics-core = "0.4.0"
 ron = "0.11.0"
 serde = { version = "1.0.228", features = ["derive"] }
 rusb = "0.9.4"
+slint = "1.14.1"
+
+[build-dependencies]
+slint-build = "1.14.1"

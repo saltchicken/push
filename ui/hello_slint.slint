@@ -1,0 +1,31 @@
+// ‼️ CHANGED: from `export global` to `export component ... inherits Window`
+export component HelloWorld inherits Window {
+    // This property will hold the text we want to display
+    in-out property <string> event_text: "Waiting for Push 2 event...";
+    
+    // This is a callback that our Rust thread can invoke
+    callback push2_event_received(string);
+
+    // When the callback is invoked, we update the property
+    push2_event_received(text) => {
+        root.event_text = text;
+    }
+
+    // A simple window with one Text element
+    VerticalLayout {
+        padding: 10px;
+        spacing: 10px;
+        Text {
+            text: "Slint Hello World";
+            font-size: 24px;
+            font-weight: 700; // ‼️ CHANGED: from `bold` to `700`
+            horizontal-alignment: center;
+        }
+        Text {
+            text: root.event_text;
+            font-size: 16px;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+}
