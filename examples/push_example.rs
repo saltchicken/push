@@ -19,6 +19,8 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     let mut push2 = Push2::new()?;
 
+    let bmp_data = include_bytes!("../test.bmp");
+
     // --- Display Setup (Application Logic) ---
     let text_style = MonoTextStyle::new(&FONT_10X20, Bgr565::WHITE);
     let mut position = Point::new(0, 70);
@@ -68,6 +70,9 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         // --- Original Display Logic (Application-specific) ---
 
         push2.display.clear(Bgr565::BLACK)?;
+
+        push2.draw_bmp_to_display(bmp_data, Point::zero())?;
+
         Rectangle::new(Point::zero(), push2.display.size())
             .into_styled(PrimitiveStyle::with_stroke(Bgr565::WHITE, 1))
             .draw(&mut push2.display)?;

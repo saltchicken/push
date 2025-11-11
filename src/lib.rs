@@ -15,6 +15,7 @@ pub use state::Push2State;
 
 pub use colors as Push2Colors;
 
+use embedded_graphics::prelude::Point;
 use midir::{MidiInputConnection, MidiOutputConnection, SendError};
 use std::sync::mpsc::{self, Receiver};
 use thiserror::Error;
@@ -142,6 +143,15 @@ impl Push2 {
         } else {
             Ok(())
         }
+    }
+
+    pub fn draw_bmp_to_display(
+        &mut self,
+        bmp_data: &[u8],
+        position: Point,
+    ) -> Result<(), Push2Error> {
+        self.display.draw_bmp(bmp_data, position)?;
+        Ok(())
     }
 
     /// Polls for the next high-level `Push2Event`.
