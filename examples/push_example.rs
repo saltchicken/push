@@ -8,7 +8,10 @@ use embedded_graphics::{
     text::Text,
 };
 use log::{debug, info, trace};
-use std::{error, thread, time};
+use std::{error, fs, thread, time};
+
+mod soundboard_modules;
+use soundboard_modules::get_audio_storage_path;
 
 const PAD_COLOR_ON: u8 = Push2Colors::GREEN_PALE;
 const BUTTON_LIGHT_ON: u8 = Push2Colors::GREEN_PALE;
@@ -19,7 +22,17 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     let mut push2 = Push2::new()?;
 
-    let bmp_data = include_bytes!("../test.bmp");
+    let audio_storage_path = get_audio_storage_path()?;
+    let bmp_path = audio_storage_path.join("waveform.bmp");
+
+    info!("Loading waveform from: {}", bmp_path.display());
+    let bmp_data = fs::read(&bmp_path).map_err(|e| {
+        format!(
+            "Failed to read 'waveform.bmp' from {}: {}. \n‼️ Did you run the 'create_waveform' example first?",
+            audio_storage_path.display(),
+            e
+        )
+    })?;
 
     // --- Display Setup (Application Logic) ---
     let text_style = MonoTextStyle::new(&FONT_10X20, Bgr565::WHITE);
@@ -71,7 +84,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
         push2.display.clear(Bgr565::BLACK)?;
 
-        push2.draw_bmp_to_display(bmp_data, Point::zero())?;
+        push2.draw_bmp_to_display(&bmp_data, Point::zero())?;
 
         Rectangle::new(Point::zero(), push2.display.size())
             .into_styled(PrimitiveStyle::with_stroke(Bgr565::WHITE, 1))

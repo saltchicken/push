@@ -68,6 +68,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     // --- Config Loading ---
     let mut push2 = Push2::new()?;
     let audio_storage_path = get_audio_storage_path()?;
+    println!("Audio storage path: {}", audio_storage_path.display());
 
     // ‼️ --- Initialize Full AppState ---
     let mut app_state = AppState {
