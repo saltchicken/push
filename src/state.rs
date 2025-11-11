@@ -89,3 +89,9 @@ impl Push2State {
         }
     }
 }
+
+impl Default for Push2State {
+    fn default() -> Self {
+        Self::new()
+    }
+}
