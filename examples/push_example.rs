@@ -1,4 +1,4 @@
-use push2::{Push2, Push2Event};
+use push2::{Push2, Push2Colors, Push2Event};
 
 use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_10X20},
@@ -9,8 +9,8 @@ use embedded_graphics::{
 };
 use std::{error, thread, time};
 
-const PAD_COLOR_ON: u8 = 122;
-const BUTTON_LIGHT_ON: u8 = 2;
+const PAD_COLOR_ON: u8 = Push2Colors::GREEN_PALE;
+const BUTTON_LIGHT_ON: u8 = Push2Colors::GREEN_PALE;
 
 fn main() -> Result<(), Box<dyn error::Error>> {
     // --- Config Loading ---

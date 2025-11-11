@@ -1,6 +1,7 @@
 // --- Module Declarations ---
 pub mod app_config;
 pub mod button_map;
+pub mod colors;
 pub mod display;
 pub mod midi_handler;
 pub mod state;
@@ -11,6 +12,8 @@ pub use button_map::{ButtonMap, ButtonMapError, ControlName, EncoderName, PadCoo
 pub use display::{Push2Display, Push2DisplayError};
 pub use midi_handler::MidiHandler;
 pub use state::Push2State;
+
+pub use colors as Push2Colors;
 
 use midir::{MidiInputConnection, MidiOutputConnection, SendError};
 use std::error::Error;
