@@ -103,12 +103,24 @@ pub struct ButtonMap {
     note_map: HashMap<u8, PadCoord>,
     control_map: HashMap<u8, ControlName>,
     encoder_map: HashMap<u8, EncoderName>,
+    #[serde(skip)]
+    note_reverse_map: HashMap<PadCoord, u8>,
+    #[serde(skip)]
+    control_reverse_map: HashMap<ControlName, u8>,
 }
 
 impl ButtonMap {
     pub fn new() -> Result<Self, ButtonMapError> {
         let map_string = include_str!("../config/button_map.ron");
-        let map: ButtonMap = ron::from_str(map_string).map_err(Box::new)?;
+        let mut map: ButtonMap = ron::from_str(map_string).map_err(Box::new)?;
+
+        for (address, coord) in &map.note_map {
+            map.note_reverse_map.insert(*coord, *address);
+        }
+        for (address, name) in &map.control_map {
+            map.control_reverse_map.insert(*name, *address);
+        }
+
         Ok(map)
     }
 
@@ -122,5 +134,15 @@ impl ButtonMap {
 
     pub fn get_encoder(&self, address: u8) -> Option<EncoderName> {
         self.encoder_map.get(&address).copied()
+    }
+    pub fn get_note_address(&self, coord: PadCoord) -> Option<u8> {
+        self.note_reverse_map.get(&coord).copied()
+    }
+
+    /// Gets the MIDI address (Note or CC) for a given control button.
+    /// NOTE: We assume the CC address from the config is the same
+    /// as the NOTE address used for LED control. This is true for most buttons.
+    pub fn get_control_address(&self, name: ControlName) -> Option<u8> {
+        self.control_reverse_map.get(&name).copied()
     }
 }

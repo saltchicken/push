@@ -1,4 +1,4 @@
-use push2::{Push2, Push2Event};
+use push2::{Push2, Push2Event, Push2State};
 
 use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_10X20},
@@ -9,10 +9,16 @@ use embedded_graphics::{
 };
 use std::{error, thread, time};
 
+// A simple white light for pads
+const PAD_COLOR_ON: u8 = 122;
+// A simple bright light for buttons
+const BUTTON_LIGHT_ON: u8 = 2; // 2 = Bright White for most buttons
+
 fn main() -> Result<(), Box<dyn error::Error>> {
     // --- Config Loading ---
 
     let mut push2 = Push2::new()?;
+    let mut state = Push2State::new();
 
     // --- Display Setup (Application Logic) ---
     let text_style = MonoTextStyle::new(&FONT_10X20, Bgr565::WHITE);
@@ -30,21 +36,23 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 Push2Event::PadPressed { coord, .. } => {
                     println!("--- Pad ({}, {}) PRESSED ---", coord.x, coord.y);
 
-                    let address = 36 + coord.x + (7 - coord.y) * 8;
-                    push2.midi_out.send(&[push2::NOTE_ON, address, 122])?; // 122 = White
+                    state.set_pad_color(coord, PAD_COLOR_ON);
+                    push2.set_pad_light(coord, PAD_COLOR_ON)?;
                 }
                 Push2Event::PadReleased { coord } => {
                     println!("--- Pad ({}, {}) RELEASED ---", coord.x, coord.y);
-                    let address = 36 + coord.x + (7 - coord.y) * 8;
-                    push2.midi_out.send(&[push2::NOTE_OFF, address, 0])?; // 0 = Off
+                    state.set_pad_color(coord, 0);
+                    push2.set_pad_light(coord, 0)?;
                 }
                 Push2Event::ButtonPressed { name, .. } => {
                     println!("--- Button {:?} PRESSED ---", name);
-                    // Note: You'll need a map from ControlName back to u8 if you want to mirror
-                    // This example just prints.
+                    state.set_button_light(name, BUTTON_LIGHT_ON);
+                    push2.set_button_light(name, BUTTON_LIGHT_ON)?;
                 }
                 Push2Event::ButtonReleased { name } => {
                     println!("--- Button {:?} RELEASED ---", name);
+                    state.set_button_light(name, 0);
+                    push2.set_button_light(name, 0)?;
                 }
                 Push2Event::EncoderTwisted { name, value } => {
                     println!("--- Encoder {:?} TWISTED, value {} ---", name, value);
