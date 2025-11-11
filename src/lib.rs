@@ -12,9 +12,28 @@ pub use display::{Push2Display, Push2DisplayError};
 pub use midi_handler::MidiHandler;
 pub use state::Push2State;
 
-use midir::{MidiInputConnection, MidiOutputConnection};
+use midir::{MidiInputConnection, MidiOutputConnection, SendError};
 use std::error::Error;
 use std::sync::mpsc::{self, Receiver};
+use thiserror::Error;
+#[derive(Error, Debug)]
+
+pub enum Push2Error {
+    #[error("Configuration error: {0}")]
+    Config(#[from] ConfigError),
+
+    #[error("Button map error: {0}")]
+    ButtonMap(#[from] ButtonMapError),
+
+    #[error("Display error: {0}")]
+    Display(#[from] Push2DisplayError),
+
+    #[error("MIDI initialization error: {0}")]
+    MidiInit(#[from] Box<dyn Error>),
+
+    #[error("MIDI send error: {0}")]
+    MidiSend(#[from] SendError),
+}
 
 // --- MIDI Message Constants ---
 pub const NOTE_ON: u8 = 144;
@@ -53,7 +72,7 @@ impl Push2 {
     /// Connects to the Push 2 display and MIDI ports.
     ///
     /// The user is responsible for loading and providing the `AppConfig`
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<Self, Push2Error> {
         let app_config = AppConfig::new()?;
 
         // --- MIDI Setup ---
@@ -75,7 +94,7 @@ impl Push2 {
         })
     }
 
-    pub fn set_pad_color(&mut self, coord: PadCoord, color: u8) -> Result<(), midir::SendError> {
+    pub fn set_pad_color(&mut self, coord: PadCoord, color: u8) -> Result<(), Push2Error> {
         // Send MIDI message
         if let Some(address) = self.button_map.get_note_address(coord) {
             let message = if color == 0 {
@@ -83,17 +102,14 @@ impl Push2 {
             } else {
                 [NOTE_ON, address, color]
             };
-            self.midi_out.send(&message)
+            self.midi_out.send(&message)?;
+            Ok(())
         } else {
             Ok(())
         }
     }
 
-    pub fn set_button_light(
-        &mut self,
-        name: ControlName,
-        light: u8,
-    ) -> Result<(), midir::SendError> {
+    pub fn set_button_light(&mut self, name: ControlName, light: u8) -> Result<(), Push2Error> {
         // Send MIDI message
         if let Some(address) = self.button_map.get_control_address(name) {
             let message = if light == 0 {
@@ -101,7 +117,8 @@ impl Push2 {
             } else {
                 [CONTROL_CHANGE, address, light]
             };
-            self.midi_out.send(&message)
+            self.midi_out.send(&message)?;
+            Ok(())
         } else {
             Ok(())
         }
