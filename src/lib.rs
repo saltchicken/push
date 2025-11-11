@@ -10,13 +10,12 @@ pub mod state;
 pub use app_config::{AppConfig, ConfigError};
 pub use button_map::{ButtonMap, ButtonMapError, ControlName, EncoderName, PadCoord};
 pub use display::{Push2Display, Push2DisplayError};
-pub use midi_handler::MidiHandler;
+pub use midi_handler::{MidiHandler, MidiHandlerError};
 pub use state::Push2State;
 
 pub use colors as Push2Colors;
 
 use midir::{MidiInputConnection, MidiOutputConnection, SendError};
-use std::error::Error;
 use std::sync::mpsc::{self, Receiver};
 use thiserror::Error;
 #[derive(Error, Debug)]
@@ -32,7 +31,7 @@ pub enum Push2Error {
     Display(#[from] Push2DisplayError),
 
     #[error("MIDI initialization error: {0}")]
-    MidiInit(#[from] Box<dyn Error>),
+    MidiInit(#[from] MidiHandlerError),
 
     #[error("MIDI send error: {0}")]
     MidiSend(#[from] SendError),
