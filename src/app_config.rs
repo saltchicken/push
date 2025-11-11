@@ -1,6 +1,6 @@
+use log::{info, warn};
 use serde::Deserialize;
 use std::fs;
-use std::path::PathBuf;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -29,12 +29,12 @@ impl AppConfig {
 
             match fs::read_to_string(&config_path) {
                 Ok(config_string) => {
-                    println!("Loading config from: {:?}", config_path);
+                    info!("Loading config from: {:?}", config_path);
                     let config: AppConfig = ron::from_str(&config_string).map_err(Box::new)?;
                     return Ok(config);
                 }
                 Err(_) => {
-                    println!("No config file found. Writing default to {:?}", config_path);
+                    info!("No config file found. Writing default to {:?}", config_path);
                     let default_config_string = include_str!("../config/app_config.ron");
                     fs::write(&config_path, default_config_string)
                         .map_err(ConfigError::ConfigFileError)?;
@@ -46,7 +46,7 @@ impl AppConfig {
             }
         }
 
-        println!("WARN: Could not find config directory. Falling back to embedded config.");
+        warn!("Could not find config directory. Falling back to embedded config.");
         let config_string = include_str!("../config/app_config.ron");
         let config: AppConfig = ron::from_str(config_string).map_err(Box::new)?;
         Ok(config)

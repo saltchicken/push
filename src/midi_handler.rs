@@ -1,4 +1,5 @@
 use crate::app_config::AppConfig;
+use log::{info, warn};
 use midir::{
     Ignore, MidiInput, MidiInputConnection, MidiInputPort, MidiOutput, MidiOutputConnection,
     MidiOutputPort,
@@ -25,7 +26,7 @@ impl MidiHandler {
         let in_port = Self::select_input_port(&midi_in, &config.midi_input_port)?;
 
         let in_port_name = midi_in.port_name(&in_port)?;
-        println!("Opening input connection to: {}", in_port_name);
+        info!("Opening input connection to: {}", in_port_name);
 
         let _conn_in = midi_in.connect(
             &in_port,
@@ -42,7 +43,7 @@ impl MidiHandler {
         let out_port = Self::select_output_port(&midi_out, &config.midi_output_port)?;
 
         let out_port_name = midi_out.port_name(&out_port)?;
-        println!("Opening output connection to: {}", out_port_name);
+        info!("Opening output connection to: {}", out_port_name);
 
         let conn_out = midi_out.connect(&out_port, "push2-output-connection")?;
 
@@ -59,20 +60,20 @@ impl MidiHandler {
         // Try to find port from config
         for port in &in_ports {
             if midi_in.port_name(port)? == config_port_name {
-                println!("Found configured input port: {}", config_port_name);
+                info!("Found configured input port: {}", config_port_name);
                 return Ok(port.clone());
             }
         }
 
         // Configured port not found, fall back to old logic
-        println!(
-            "WARN: Configured input port '{}' not found. Falling back to manual selection.",
+        warn!(
+            "Configured input port '{}' not found. Falling back to manual selection.",
             config_port_name
         );
         match in_ports.len() {
             0 => Err("No MIDI input ports found!".into()),
             1 => {
-                println!(
+                info!(
                     "Choosing the only available input port: {}",
                     midi_in.port_name(&in_ports[0])?
                 );
@@ -106,20 +107,20 @@ impl MidiHandler {
         // Try to find output port from config
         for port in &out_ports {
             if midi_out.port_name(port)? == config_port_name {
-                println!("Found configured output port: {}", config_port_name);
+                info!("Found configured output port: {}", config_port_name);
                 return Ok(port.clone());
             }
         }
 
         // Configured port not found, fall back to old logic
-        println!(
-            "WARN: Configured output port '{}' not found. Falling back to manual selection.",
+        warn!(
+            "Configured output port '{}' not found. Falling back to manual selection.",
             config_port_name
         );
         match out_ports.len() {
             0 => Err("No MIDI output ports found!".into()),
             1 => {
-                println!(
+                info!(
                     "Choosing the only available output port: {}",
                     midi_out.port_name(&out_ports[0])?
                 );
