@@ -1,4 +1,4 @@
-use push2::{Push2, Push2Event, Push2State};
+use push2::{Push2, Push2Event};
 
 use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_10X20},
@@ -16,7 +16,6 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     // --- Config Loading ---
 
     let mut push2 = Push2::new()?;
-    let mut state = Push2State::new();
 
     // --- Display Setup (Application Logic) ---
     let text_style = MonoTextStyle::new(&FONT_10X20, Bgr565::WHITE);
@@ -29,8 +28,6 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     loop {
         while let Some(event) = push2.poll_event() {
             println!("Received event: {:?}", event);
-
-            state.update_from_event(&event);
 
             match event {
                 Push2Event::PadPressed { coord, .. } => {
@@ -52,7 +49,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 Push2Event::EncoderTwisted { name, .. } => {
                     // println!("--- Encoder {:?} TWISTED, raw value {} ---", name, value);
 
-                    let current_value = state.encoders.get(&name).map_or(0, |s| s.value);
+                    let current_value = push2.state.encoders.get(&name).map_or(0, |s| s.value);
                     println!("    New tracked value for {:?}: {}", name, current_value);
                 }
                 Push2Event::SliderMoved { value } => {

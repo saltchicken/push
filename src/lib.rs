@@ -64,6 +64,7 @@ pub struct Push2 {
     /// The MIDI output connection, for sending light/color data
     pub midi_out: MidiOutputConnection,
     pub button_map: ButtonMap,
+    pub state: Push2State,
     event_rx: Receiver<Vec<u8>>,
     _conn_in: MidiInputConnection<()>,
 }
@@ -85,12 +86,15 @@ impl Push2 {
         let display = Push2Display::new()?;
         let MidiHandler { _conn_in, conn_out } = midi_handler;
 
+        let state = Push2State::new();
+
         Ok(Self {
             display,
             midi_out: conn_out,
             button_map,
             event_rx: rx,
             _conn_in,
+            state,
         })
     }
 
@@ -103,6 +107,11 @@ impl Push2 {
                 [NOTE_ON, address, color]
             };
             self.midi_out.send(&message)?;
+
+            // Update state
+            let pad = &mut self.state.pads[coord.y as usize][coord.x as usize];
+            pad.color = color;
+
             Ok(())
         } else {
             Ok(())
@@ -118,6 +127,11 @@ impl Push2 {
                 [CONTROL_CHANGE, address, light]
             };
             self.midi_out.send(&message)?;
+
+            // Update state
+            let button = self.state.buttons.entry(name).or_default();
+            button.light = light;
+
             Ok(())
         } else {
             Ok(())
@@ -126,7 +140,7 @@ impl Push2 {
 
     /// Polls for the next high-level `Push2Event`.
     /// This is non-blocking
-    pub fn poll_event(&self) -> Option<Push2Event> {
+    pub fn poll_event(&mut self) -> Option<Push2Event> {
         while let Ok(message) = self.event_rx.try_recv() {
             if message.is_empty() {
                 continue;
@@ -203,8 +217,9 @@ impl Push2 {
             };
 
             // If we parsed a valid event, return it
-            if event.is_some() {
-                return event;
+            if let Some(parsed_event) = event {
+                self.state.update_from_event(&parsed_event);
+                return Some(parsed_event);
             }
         }
         // No events in the queue

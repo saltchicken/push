@@ -59,22 +59,18 @@ impl Push2State {
             crate::Push2Event::PadPressed { coord, velocity } => {
                 let pad = &mut self.pads[coord.y as usize][coord.x as usize];
                 pad.velocity = *velocity;
-                pad.color = 122;
             }
             crate::Push2Event::PadReleased { coord } => {
                 let pad = &mut self.pads[coord.y as usize][coord.x as usize];
                 pad.velocity = 0;
-                pad.color = 0;
             }
             crate::Push2Event::ButtonPressed { name, velocity } => {
                 let button = self.buttons.entry(*name).or_default();
                 button.velocity = *velocity;
-                button.light = 2;
             }
             crate::Push2Event::ButtonReleased { name } => {
                 let button = self.buttons.entry(*name).or_default();
                 button.velocity = 0;
-                button.light = 0;
             }
             crate::Push2Event::EncoderTwisted { name, value } => {
                 let state = self.encoders.entry(*name).or_default();
