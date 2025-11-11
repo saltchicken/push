@@ -1,5 +1,5 @@
 use crate::{ButtonMap, CONTROL_CHANGE, ControlName, EncoderName, NOTE_OFF, NOTE_ON, PadCoord};
-use midir::MidiOutputConnection; // ‼️ Added this import
+use midir::MidiOutputConnection;
 use std::collections::HashMap;
 
 // A simple white light for pads
@@ -126,7 +126,6 @@ impl Push2State {
         }
     }
 
-    // ‼️ This function signature and body are changed
     /// Sets the internal state for a button's light AND sends the MIDI message.
     pub fn set_button_light(
         &mut self,
@@ -151,3 +150,4 @@ impl Push2State {
         }
     }
 }
+

@@ -133,4 +133,3 @@ fn open_device<T: UsbContext>(
 
     None
 }
-
