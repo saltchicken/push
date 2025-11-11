@@ -1,3 +1,4 @@
+//TODO: Fix the color mapping
 #![allow(dead_code)]
 
 pub const BLACK: u8 = 0;
