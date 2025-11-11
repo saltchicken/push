@@ -88,11 +88,12 @@ impl Push2State {
                 let state = self.encoders.entry(*name).or_default();
                 // Convert Push 2's relative value (1-63 = CW, 65-127 = CCW)
                 let delta = if *value > 64 {
-                    (128 - *value) as i32 * -1
+                    -((128 - *value) as i32)
                 } else {
                     *value as i32
                 };
-                state.value = state.value.wrapping_add(delta);
+                let new_value = state.value.saturating_add(delta);
+                state.value = new_value.clamp(0, 127);
             }
             crate::Push2Event::SliderMoved { value } => {
                 self.slider = *value;

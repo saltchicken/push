@@ -44,8 +44,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                 Push2Event::ButtonReleased { name } => {
                     println!("--- Button {:?} RELEASED ---", name);
                 }
-                Push2Event::EncoderTwisted { name, value } => {
-                    println!("--- Encoder {:?} TWISTED, value {} ---", name, value);
+                Push2Event::EncoderTwisted { name, .. } => {
+                    // println!("--- Encoder {:?} TWISTED, raw value {} ---", name, value);
+
+                    let current_value = push2.state.encoders.get(&name).map_or(0, |s| s.value);
+                    println!("    New tracked value for {:?}: {}", name, current_value);
                 }
                 Push2Event::SliderMoved { value } => {
                     println!("--- Slider MOVED, value {} ---", value);
