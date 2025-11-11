@@ -45,7 +45,6 @@ pub struct Push2 {
     /// The MIDI output connection, for sending light/color data
     pub midi_out: MidiOutputConnection,
     pub button_map: ButtonMap,
-    pub state: Push2State,
     event_rx: Receiver<Vec<u8>>,
     _conn_in: MidiInputConnection<()>,
 }
@@ -71,15 +70,41 @@ impl Push2 {
             display,
             midi_out: conn_out,
             button_map,
-            state: Push2State::new(),
             event_rx: rx,
             _conn_in,
         })
     }
 
-    pub fn update_state(&mut self, event: &Push2Event) -> Result<(), midir::SendError> {
-        self.state
-            .update_from_event(event, &mut self.midi_out, &self.button_map)
+    pub fn set_pad_color(&mut self, coord: PadCoord, color: u8) -> Result<(), midir::SendError> {
+        // Send MIDI message
+        if let Some(address) = self.button_map.get_note_address(coord) {
+            let message = if color == 0 {
+                [NOTE_OFF, address, 0]
+            } else {
+                [NOTE_ON, address, color]
+            };
+            self.midi_out.send(&message)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn set_button_light(
+        &mut self,
+        name: ControlName,
+        light: u8,
+    ) -> Result<(), midir::SendError> {
+        // Send MIDI message
+        if let Some(address) = self.button_map.get_control_address(name) {
+            let message = if light == 0 {
+                [CONTROL_CHANGE, address, 0]
+            } else {
+                [CONTROL_CHANGE, address, light]
+            };
+            self.midi_out.send(&message)
+        } else {
+            Ok(())
+        }
     }
 
     /// Polls for the next high-level `Push2Event`.

@@ -1,4 +1,4 @@
-use push2::{Push2, Push2Event};
+use push2::{Push2, Push2Event, Push2State};
 
 use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_10X20},
@@ -9,10 +9,14 @@ use embedded_graphics::{
 };
 use std::{error, thread, time};
 
+const PAD_COLOR_ON: u8 = 122;
+const BUTTON_LIGHT_ON: u8 = 2;
+
 fn main() -> Result<(), Box<dyn error::Error>> {
     // --- Config Loading ---
 
     let mut push2 = Push2::new()?;
+    let mut state = Push2State::new();
 
     // --- Display Setup (Application Logic) ---
     let text_style = MonoTextStyle::new(&FONT_10X20, Bgr565::WHITE);
@@ -26,28 +30,29 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         while let Some(event) = push2.poll_event() {
             println!("Received event: {:?}", event);
 
-            match push2.update_state(&event) {
-                Ok(()) => (),
-                Err(e) => println!("Error updating state: {}", e),
-            }
+            state.update_from_event(&event);
 
             match event {
                 Push2Event::PadPressed { coord, .. } => {
                     println!("--- Pad ({}, {}) PRESSED ---", coord.x, coord.y);
+                    push2.set_pad_color(coord, PAD_COLOR_ON)?;
                 }
                 Push2Event::PadReleased { coord } => {
                     println!("--- Pad ({}, {}) RELEASED ---", coord.x, coord.y);
+                    push2.set_pad_color(coord, 0)?;
                 }
                 Push2Event::ButtonPressed { name, .. } => {
                     println!("--- Button {:?} PRESSED ---", name);
+                    push2.set_button_light(name, BUTTON_LIGHT_ON)?;
                 }
                 Push2Event::ButtonReleased { name } => {
                     println!("--- Button {:?} RELEASED ---", name);
+                    push2.set_button_light(name, 0)?;
                 }
                 Push2Event::EncoderTwisted { name, .. } => {
                     // println!("--- Encoder {:?} TWISTED, raw value {} ---", name, value);
 
-                    let current_value = push2.state.encoders.get(&name).map_or(0, |s| s.value);
+                    let current_value = state.encoders.get(&name).map_or(0, |s| s.value);
                     println!("    New tracked value for {:?}: {}", name, current_value);
                 }
                 Push2Event::SliderMoved { value } => {
