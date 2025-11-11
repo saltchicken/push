@@ -1,6 +1,11 @@
-// ‼️ This is a new file: src/state.rs
-use crate::{ControlName, EncoderName, PadCoord};
+use crate::{ButtonMap, CONTROL_CHANGE, ControlName, EncoderName, NOTE_OFF, NOTE_ON, PadCoord};
+use midir::MidiOutputConnection; // ‼️ Added this import
 use std::collections::HashMap;
+
+// A simple white light for pads
+const PAD_COLOR_ON: u8 = 122;
+// A simple bright light for buttons
+const BUTTON_LIGHT_ON: u8 = 2; // 2 = Bright White for most buttons
 
 /// Holds the state of a single 8x8 grid pad
 #[derive(Debug, Clone, Copy, Default)]
@@ -56,19 +61,28 @@ impl Push2State {
     /// Updates the state based on an incoming event.
     /// This only updates the *input* state (velocity, pressed, etc.).
     /// It does not update the *output* state (color, light).
-    pub fn update_from_event(&mut self, event: &crate::Push2Event) {
+    pub fn update_from_event(
+        &mut self,
+        event: &crate::Push2Event,
+        midi_out: &mut MidiOutputConnection,
+        button_map: &ButtonMap,
+    ) -> Result<(), midir::SendError> {
         match event {
             crate::Push2Event::PadPressed { coord, velocity } => {
                 self.pads[coord.y as usize][coord.x as usize].velocity = *velocity;
+                self.set_pad_color(*coord, PAD_COLOR_ON, midi_out, button_map)?;
             }
             crate::Push2Event::PadReleased { coord } => {
                 self.pads[coord.y as usize][coord.x as usize].velocity = 0;
+                self.set_pad_color(*coord, 0, midi_out, button_map)?;
             }
             crate::Push2Event::ButtonPressed { name, velocity } => {
                 self.buttons.entry(*name).or_default().velocity = *velocity;
+                self.set_button_light(*name, BUTTON_LIGHT_ON, midi_out, button_map)?;
             }
             crate::Push2Event::ButtonReleased { name } => {
                 self.buttons.entry(*name).or_default().velocity = 0;
+                self.set_button_light(*name, 0, midi_out, button_map)?;
             }
             crate::Push2Event::EncoderTwisted { name, value } => {
                 let state = self.encoders.entry(*name).or_default();
@@ -84,19 +98,55 @@ impl Push2State {
                 self.slider = *value;
             }
         }
+        Ok(())
     }
 
     // --- Methods to update output state (lights) ---
-
-    /// Sets the internal state for a pad's color.
-    /// This DOES NOT send the MIDI message.
-    pub fn set_pad_color(&mut self, coord: PadCoord, color: u8) {
+    pub fn set_pad_color(
+        &mut self,
+        coord: PadCoord,
+        color: u8,
+        midi_out: &mut MidiOutputConnection,
+        button_map: &ButtonMap,
+    ) -> Result<(), midir::SendError> {
+        // 1. Update internal state
         self.pads[coord.y as usize][coord.x as usize].color = color;
+
+        // 2. Send MIDI message
+        if let Some(address) = button_map.get_note_address(coord) {
+            let message = if color == 0 {
+                [NOTE_OFF, address, 0]
+            } else {
+                [NOTE_ON, address, color]
+            };
+            midi_out.send(&message)
+        } else {
+            Ok(())
+        }
     }
 
-    /// Sets the internal state for a button's light.
-    /// This DOES NOT send the MIDI message.
-    pub fn set_button_light(&mut self, name: ControlName, light: u8) {
+    // ‼️ This function signature and body are changed
+    /// Sets the internal state for a button's light AND sends the MIDI message.
+    pub fn set_button_light(
+        &mut self,
+        name: ControlName,
+        light: u8,
+        midi_out: &mut MidiOutputConnection,
+        button_map: &ButtonMap,
+    ) -> Result<(), midir::SendError> {
+        // 1. Update internal state
         self.buttons.entry(name).or_default().light = light;
+
+        // 2. Send MIDI message
+        if let Some(address) = button_map.get_control_address(name) {
+            let message = if light == 0 {
+                [CONTROL_CHANGE, address, 0]
+            } else {
+                [CONTROL_CHANGE, address, light]
+            };
+            midi_out.send(&message)
+        } else {
+            Ok(())
+        }
     }
 }

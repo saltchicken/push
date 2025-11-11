@@ -9,11 +9,6 @@ use embedded_graphics::{
 };
 use std::{error, thread, time};
 
-// A simple white light for pads
-const PAD_COLOR_ON: u8 = 122;
-// A simple bright light for buttons
-const BUTTON_LIGHT_ON: u8 = 2; // 2 = Bright White for most buttons
-
 fn main() -> Result<(), Box<dyn error::Error>> {
     // --- Config Loading ---
 
@@ -32,27 +27,20 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         while let Some(event) = push2.poll_event() {
             println!("Received event: {:?}", event);
 
+            state.update_from_event(&event, &mut push2.midi_out, &push2.button_map)?;
+
             match event {
                 Push2Event::PadPressed { coord, .. } => {
                     println!("--- Pad ({}, {}) PRESSED ---", coord.x, coord.y);
-
-                    state.set_pad_color(coord, PAD_COLOR_ON);
-                    push2.set_pad_light(coord, PAD_COLOR_ON)?;
                 }
                 Push2Event::PadReleased { coord } => {
                     println!("--- Pad ({}, {}) RELEASED ---", coord.x, coord.y);
-                    state.set_pad_color(coord, 0);
-                    push2.set_pad_light(coord, 0)?;
                 }
                 Push2Event::ButtonPressed { name, .. } => {
                     println!("--- Button {:?} PRESSED ---", name);
-                    state.set_button_light(name, BUTTON_LIGHT_ON);
-                    push2.set_button_light(name, BUTTON_LIGHT_ON)?;
                 }
                 Push2Event::ButtonReleased { name } => {
                     println!("--- Button {:?} RELEASED ---", name);
-                    state.set_button_light(name, 0);
-                    push2.set_button_light(name, 0)?;
                 }
                 Push2Event::EncoderTwisted { name, value } => {
                     println!("--- Encoder {:?} TWISTED, value {} ---", name, value);

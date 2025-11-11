@@ -44,7 +44,7 @@ pub struct Push2 {
     pub display: Push2Display,
     /// The MIDI output connection, for sending light/color data
     pub midi_out: MidiOutputConnection,
-    button_map: ButtonMap,
+    pub button_map: ButtonMap,
     event_rx: Receiver<Vec<u8>>,
     _conn_in: MidiInputConnection<()>,
 }
@@ -73,43 +73,6 @@ impl Push2 {
             event_rx: rx,
             _conn_in,
         })
-    }
-
-    pub fn set_pad_light(&mut self, coord: PadCoord, color: u8) -> Result<(), midir::SendError> {
-        if let Some(address) = self.button_map.get_note_address(coord) {
-            let message = if color == 0 {
-                [NOTE_OFF, address, 0]
-            } else {
-                [NOTE_ON, address, color]
-            };
-            self.midi_out.send(&message)
-        } else {
-            // Optionally return an error, but for now we just ignore invalid coords
-            Ok(())
-        }
-    }
-
-    /// Sets the light of a control button.
-    /// `light` is typically 0 (off), 1 (dim), or 2 (on) for monochrome
-    /// buttons, or a 0-127 color for RGB buttons (like the scene launchers).
-    pub fn set_button_light(
-        &mut self,
-        name: ControlName,
-        light: u8,
-    ) -> Result<(), midir::SendError> {
-        println!("Setting {:?} light to {}", name, light);
-        // We are assuming the control's CC address is the same as its Note address for LED control.
-        // This holds true for many buttons (Play, Record, Stop, etc.).
-        if let Some(address) = self.button_map.get_control_address(name) {
-            let message = if light == 0 {
-                [CONTROL_CHANGE, address, 0]
-            } else {
-                [CONTROL_CHANGE, address, light]
-            };
-            self.midi_out.send(&message)
-        } else {
-            Ok(())
-        }
     }
 
     /// Polls for the next high-level `Push2Event`.
