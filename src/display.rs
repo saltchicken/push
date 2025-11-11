@@ -1,3 +1,4 @@
+use embedded_graphics::image::Image;
 use embedded_graphics_core::{
     Pixel,
     geometry::Size,
@@ -6,6 +7,7 @@ use embedded_graphics_core::{
 };
 use rusb::{Context, Device, DeviceDescriptor, DeviceHandle, UsbContext};
 use thiserror::Error;
+use tinybmp::Bmp;
 
 pub struct Push2Display {
     handle: DeviceHandle<Context>,
@@ -20,6 +22,9 @@ pub enum Push2DisplayError {
 
     #[error(transparent)]
     USBError(#[from] rusb::Error),
+
+    #[error("Failed to parse BMP image")] // ‼️ 3. ADD THIS LINE
+    BmpParseError, // ‼️ 3. ADD THIS LINE
 }
 
 pub const DISPLAY_WIDTH: usize = 960;
@@ -64,6 +69,22 @@ impl Push2Display {
             .write_bulk(PUSH2_BULK_EP_OUT, &HEADER, timeout)?;
         self.handle
             .write_bulk(PUSH2_BULK_EP_OUT, &self.transfer_buffer, timeout)?;
+
+        Ok(())
+    }
+
+    pub fn draw_bmp(&mut self, bmp_data: &[u8], position: Point) -> Result<(), Push2DisplayError> {
+        // Parse the BMP data
+        // ‼️ Map the unit error type `()` to our custom `BmpParseError`
+        let bmp: Bmp<Bgr565> =
+            Bmp::from_slice(bmp_data).map_err(|_| Push2DisplayError::BmpParseError)?;
+
+        // Create an embedded-graphics Image
+        let image = Image::new(&bmp, position);
+
+        // Draw the image to the frame buffer
+        // Our DrawTarget error is Infallible, so this .unwrap() is safe.
+        image.draw(self).unwrap();
 
         Ok(())
     }
