@@ -1,6 +1,7 @@
 use push2::{Push2, Push2Event};
 
 use embedded_graphics::{
+    image::Image,
     mono_font::{MonoTextStyle, ascii::FONT_10X20},
     pixelcolor::Bgr565,
     prelude::*,
@@ -8,6 +9,7 @@ use embedded_graphics::{
     text::Text,
 };
 use std::{error, thread, time};
+use tinybmp::Bmp;
 
 const PAD_COLOR_ON: u8 = 122;
 const BUTTON_LIGHT_ON: u8 = 2;
@@ -16,6 +18,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     // --- Config Loading ---
 
     let mut push2 = Push2::new()?;
+
+    let bmp_data = include_bytes!("../test.bmp");
+    let bmp: Bmp<Bgr565> = Bmp::from_slice(bmp_data).expect("Failed to parse BMP image");
+    let image = Image::new(&bmp, Point::zero());
 
     // --- Display Setup (Application Logic) ---
     let text_style = MonoTextStyle::new(&FONT_10X20, Bgr565::WHITE);
@@ -61,16 +67,18 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         // --- Original Display Logic (Application-specific) ---
 
         push2.display.clear(Bgr565::BLACK)?;
-        Rectangle::new(Point::zero(), push2.display.size())
-            .into_styled(PrimitiveStyle::with_stroke(Bgr565::WHITE, 1))
-            .draw(&mut push2.display)?;
 
-        position.x += step;
-        if position.x >= push2.display.size().width as i32 || position.x <= 0 {
-            step *= -1;
-        }
-
-        Text::new("Hello!", position, text_style).draw(&mut push2.display)?;
+        image.draw(&mut push2.display)?;
+        // Rectangle::new(Point::zero(), push2.display.size())
+        //     .into_styled(PrimitiveStyle::with_stroke(Bgr565::WHITE, 1))
+        //     .draw(&mut push2.display)?;
+        //
+        // position.x += step;
+        // if position.x >= push2.display.size().width as i32 || position.x <= 0 {
+        //     step *= -1;
+        // }
+        //
+        // Text::new("Hello!", position, text_style).draw(&mut push2.display)?;
         push2.display.flush()?;
 
         thread::sleep(time::Duration::from_millis(1000 / 60));
