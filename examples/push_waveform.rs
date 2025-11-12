@@ -72,16 +72,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                     debug!("--- Button {:?} RELEASED ---", name);
                     push2.set_button_light(name, 0)?;
                 }
-                Push2Event::EncoderTwisted {
-                    name,
-                    value,
-                    raw_delta,
-                } => {
-                    trace!(
+                Push2Event::EncoderTwisted { name, raw_delta } => {
+                    debug!(
                         "--- Encoder {:?} TWISTED, raw value {} ---",
                         name, raw_delta
                     );
-                    debug!("    New tracked value for {:?}: {}", name, value);
                 }
                 Push2Event::SliderMoved { value } => {
                     debug!("--- Slider MOVED, value {} ---", value);
@@ -110,4 +105,3 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         thread::sleep(time::Duration::from_millis(1000 / 60));
     }
 }
-
