@@ -1,4 +1,4 @@
-use crate::{ControlName, EncoderName};
+use crate::ControlName;
 use std::collections::HashMap;
 /// Holds the state of a single 8x8 grid pad
 #[derive(Debug, Clone, Copy, Default)]
