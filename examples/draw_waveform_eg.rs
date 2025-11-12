@@ -77,6 +77,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let image_height = display_size.height;
 
     // --- 2. Load WAV File (from create_waveform.rs) ---
+    let load_start = time::Instant::now();
     let audio_storage_path = get_audio_storage_path()?;
     let input_wav_path = audio_storage_path.join("test.wav");
     info!("Reading input file: {}", input_wav_path.display());
@@ -120,6 +121,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         })
         .collect();
 
+    let load_duration = load_start.elapsed();
+    info!(
+        "Waveform calculation (load + process) took: {:?}",
+        load_duration
+    );
     // --- 4. Prepare drawing variables (outside loop) ---
     let mid_y = image_height as f32 / 2.0;
     let line_style = PrimitiveStyle::with_stroke(WAVEFORM_COLOR, 1);
@@ -145,6 +151,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // ‼️ --- REDRAW LOGIC (MOVED INSIDE LOOP) --- ‼️
 
+        let draw_start = time::Instant::now();
         // ‼️ 1. Clear the display every frame
         push2.display.clear(BACKGROUND_COLOR)?;
 
@@ -172,6 +179,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // ‼️ 3. Flush the buffer every frame to keep the screen alive
         push2.display.flush()?;
+        let draw_duration = draw_start.elapsed();
+        debug!("Draw took: {:?}", draw_duration);
 
         // ‼️ 4. Sleep to main_loop ~60 FPS
         thread::sleep(time::Duration::from_millis(16));
