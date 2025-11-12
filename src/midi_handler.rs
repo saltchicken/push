@@ -14,7 +14,7 @@ pub enum MidiHandlerError {
     #[error("MidiInput initialization failed: {0}")]
     InputInit(#[from] InitError),
     #[error("MidiOutput initialization failed: {0}")]
-    OutputInit(InitError), // ‼️ We need a separate variant for this
+    OutputInit(InitError),
     #[error("Failed to get port name: {0}")]
     PortName(#[from] PortInfoError),
     #[error("Input connection failed: {0}")]
@@ -50,7 +50,7 @@ impl MidiHandler {
         let mut midi_in = MidiInput::new("push2")?;
         midi_in.ignore(Ignore::None);
 
-        let in_port = Self::select_input_port(&midi_in, &config.midi_input_port)?; // ‼️ Uses ?
+        let in_port = Self::select_input_port(&midi_in, &config.midi_input_port)?;
         let in_port_name = midi_in.port_name(&in_port)?;
 
         info!("Opening input connection to: {}", in_port_name);
@@ -65,17 +65,17 @@ impl MidiHandler {
 
         // --- Output Connection ---
         let midi_out = MidiOutput::new("push2_output").map_err(MidiHandlerError::OutputInit)?;
-        let out_port = Self::select_output_port(&midi_out, &config.midi_output_port)?; // ‼️ Uses ?
-        let out_port_name = midi_out.port_name(&out_port)?; // ‼️ Uses From<PortInfoError>
+        let out_port = Self::select_output_port(&midi_out, &config.midi_output_port)?;
+        let out_port_name = midi_out.port_name(&out_port)?;
 
         info!("Opening output connection to: {}", out_port_name);
-        let conn_out = midi_out.connect(&out_port, "push2-output-connection")?; // ‼️ Uses From<ConnectError<MidiOutput>>
+        let conn_out = midi_out.connect(&out_port, "push2-output-connection")?;
 
         Ok(MidiHandler { _conn_in, conn_out })
     }
 
     /// Finds the configured input port, or falls back to manual selection.
-    // ‼️ Changed signature
+
     fn select_input_port(
         midi_in: &MidiInput,
         config_port_name: &str,
@@ -96,7 +96,7 @@ impl MidiHandler {
         );
 
         match in_ports.len() {
-            0 => Err(MidiHandlerError::NoInputPorts), // ‼️ Changed error
+            0 => Err(MidiHandlerError::NoInputPorts),
             1 => {
                 info!(
                     "Choosing the only available input port: {}",
@@ -110,20 +110,20 @@ impl MidiHandler {
                     println!("{}: {}", i, midi_in.port_name(port)?);
                 }
                 print!("Please select port for Ableton Push 2 INPUT: ");
-                stdout().flush()?; // ‼️ Uses From<io::Error>
+                stdout().flush()?;
                 let mut input = String::new();
-                stdin().read_line(&mut input)?; // ‼️ Uses From<io::Error>
-                let port_index: usize = input.trim().parse()?; // ‼️ Uses From<ParseIntError>
+                stdin().read_line(&mut input)?;
+                let port_index: usize = input.trim().parse()?;
                 in_ports
                     .get(port_index)
                     .cloned()
-                    .ok_or(MidiHandlerError::InvalidInputPortIndex) // ‼️ Changed error
+                    .ok_or(MidiHandlerError::InvalidInputPortIndex)
             }
         }
     }
 
     /// Finds the configured output port, or falls back to manual selection.
-    // ‼️ Changed signature
+
     fn select_output_port(
         midi_out: &MidiOutput,
         config_port_name: &str,
@@ -144,7 +144,7 @@ impl MidiHandler {
         );
 
         match out_ports.len() {
-            0 => Err(MidiHandlerError::NoOutputPorts), // ‼️ Changed error
+            0 => Err(MidiHandlerError::NoOutputPorts),
             1 => {
                 info!(
                     "Choosing the only available output port: {}",
@@ -158,14 +158,14 @@ impl MidiHandler {
                     println!("{}: {}", i, midi_out.port_name(port)?);
                 }
                 print!("Please select port for Ableton Push 2 OUTPUT: ");
-                stdout().flush()?; // ‼️ Uses From<io::Error>
+                stdout().flush()?;
                 let mut input = String::new();
-                stdin().read_line(&mut input)?; // ‼️ Uses From<io::Error>
-                let port_index: usize = input.trim().parse()?; // ‼️ Uses From<ParseIntError>
+                stdin().read_line(&mut input)?;
+                let port_index: usize = input.trim().parse()?;
                 out_ports
                     .get(port_index)
                     .cloned()
-                    .ok_or(MidiHandlerError::InvalidOutputPortIndex) // ‼️ Changed error
+                    .ok_or(MidiHandlerError::InvalidOutputPortIndex)
             }
         }
     }

@@ -1,4 +1,4 @@
-// ‼️ Import new modules and types
+
 mod soundboard_modules;
 use crate::soundboard_modules::audio_player::PlaybackSink;
 use log::{debug, info};
@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::{error, time};
-use tokio::fs as tokio_fs; // ‼️ For async file deletion
+use tokio::fs as tokio_fs;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Mode {
@@ -16,11 +16,12 @@ enum Mode {
     Edit,
 }
 
-// ‼️ AppState is now a combination of both projects
+
 struct AppState {
     mode: Mode,
     pad_files: HashMap<u8, PathBuf>,
-    playback_sink: PlaybackSink,
+    is_muted: bool,
+    is_soloed: bool,
     playback_volume: HashMap<u8, f64>,
     pitch_shift_semitones: HashMap<u8, f64>,
     active_recording_key: Option<u8>,
@@ -48,13 +49,13 @@ pub fn get_audio_storage_path() -> std::io::Result<PathBuf> {
     }
 }
 
-// ‼️ Main function is now `async` and uses `tokio::main`
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn error::Error>> {
     env_logger::init();
 
-    // ‼️ --- Spawn Audio Capture Thread ---
-    // ‼️ This thread will block on the pipewire mainloop, which is perfect.
+
+
     let (audio_tx, audio_rx) = mpsc::channel();
     std::thread::spawn(move || {
         println!("Audio capture thread started...");
@@ -70,11 +71,12 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     let audio_storage_path = get_audio_storage_path()?;
     println!("Audio storage path: {}", audio_storage_path.display());
 
-    // ‼️ --- Initialize Full AppState ---
+
     let mut app_state = AppState {
         mode: Mode::Playback,
         pad_files: HashMap::new(),
-        playback_sink: PlaybackSink::Default,
+        is_muted: false,
+        is_soloed: false,
         playback_volume: HashMap::new(),
         pitch_shift_semitones: HashMap::new(),
         active_recording_key: None,
@@ -85,21 +87,21 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     info!("\nConnection open. Soundboard example running.");
     info!(
         "Mode: {:?} | Sink: {:?}",
-        app_state.mode, app_state.playback_sink
+        app_state.mode, app_state.is_muted, app_state.is_soloed
     );
 
-    // ‼️ --- Initialize Pads ---
+
     for y in 0..8 {
         for x in 0..8 {
             let coord = PadCoord { x, y };
             let mut color = COLOR_OFF;
 
             if let Some(address) = push2.button_map.get_note_address(coord) {
-                // ‼️ Assign a file path to every pad
+
                 let file_name = format!("pad_{}_{}.wav", x, y);
                 let file_path = audio_storage_path.join(file_name);
 
-                // ‼️ Check if the file *actually* exists
+
                 if file_path.exists() {
                     color = COLOR_HAS_FILE;
                 }
@@ -114,7 +116,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
         while let Some(event) = push2.poll_event() {
             debug!("Received event: {:?}", event);
             match event {
-                // ‼️ --- PAD PRESSED ---
+
                 Push2Event::PadPressed { coord, .. } => {
                     let Some(address) = push2.button_map.get_note_address(coord) else {
                         continue;
@@ -126,10 +128,10 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                     match app_state.mode {
                         Mode::Playback => {
                             if path.exists() {
-                                // ‼️ File exists: Set color to "playing"
+
                                 push2.set_pad_color(coord, COLOR_PLAYING)?;
                             } else {
-                                // ‼️ No file: Start recording
+
                                 info!("START recording to {}", path.display());
                                 let cmd = AudioCommand::Start(path.clone());
                                 if let Err(e) = app_state.audio_cmd_tx.send(cmd) {
@@ -143,26 +145,26 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                         Mode::Edit => {
                             if !path.exists() {
                                 continue;
-                            } // ‼️ Can't edit a non-existent file
+                            }
 
                             if let Some(prev_selected_key) = app_state.selected_for_edit {
                                 if prev_selected_key == address {
-                                    // ‼️ Deselecting current pad
+
                                     app_state.selected_for_edit = None;
                                     push2.set_pad_color(coord, COLOR_HAS_FILE)?;
                                 } else {
-                                    // ‼️ Deselect old pad
+
                                     if let Some(old_coord) =
                                         push2.button_map.get_note(prev_selected_key)
                                     {
                                         push2.set_pad_color(old_coord, COLOR_HAS_FILE)?;
                                     }
-                                    // ‼️ Select new pad
+
                                     app_state.selected_for_edit = Some(address);
                                     push2.set_pad_color(coord, COLOR_SELECTED)?;
                                 }
                             } else {
-                                // ‼️ Nothing selected, select this pad
+
                                 app_state.selected_for_edit = Some(address);
                                 push2.set_pad_color(coord, COLOR_SELECTED)?;
                             }
@@ -170,7 +172,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                     }
                 }
 
-                // ‼️ --- PAD RELEASED ---
+
                 Push2Event::PadReleased { coord } => {
                     let Some(address) = push2.button_map.get_note_address(coord) else {
                         continue;
@@ -182,16 +184,16 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                     match app_state.mode {
                         Mode::Playback => {
                             if app_state.active_recording_key == Some(address) {
-                                // ‼️ --- Stop Recording ---
+
                                 info!("STOP recording.");
                                 if let Err(e) = app_state.audio_cmd_tx.send(AudioCommand::Stop) {
                                     eprintln!("Failed to send STOP command: {}", e);
                                 }
                                 app_state.active_recording_key = None;
-                                // ‼️ Set color to "has_file" (it should exist now)
+
                                 push2.set_pad_color(coord, COLOR_HAS_FILE)?;
                             } else if path.exists() {
-                                // ‼️ --- Trigger Playback ---
+
                                 info!("Triggering playback for pad ({}, {}).", coord.x, coord.y);
                                 let pitch_shift = app_state
                                     .pitch_shift_semitones
@@ -199,14 +201,23 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                                     .cloned()
                                     .unwrap_or(0.0);
                                 let path_clone = path.clone();
-                                let sink_clone = app_state.playback_sink;
+                                let sink_target = match (app_state.is_soloed, app_state.is_muted) {
+
+                                    (true, true) => Some(PlaybackSink::Default),
+
+                                    (true, false) => Some(PlaybackSink::Both),
+
+                                    (false, true) => None,
+
+                                    (false, false) => Some(PlaybackSink::Mixer),
+                                };
                                 let volume_clone = app_state
                                     .playback_volume
                                     .get(&address)
                                     .cloned()
                                     .unwrap_or(1.0);
 
-                                // ‼️ Spawn a new async task to handle playback
+
                                 tokio::spawn(async move {
                                     let mut temp_path: Option<PathBuf> = None;
                                     let path_to_play = if pitch_shift.abs() > 0.01 {
@@ -262,24 +273,24 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                                         }
                                     }
                                 });
-                                // ‼️ Set color back to "has_file"
+
                                 push2.set_pad_color(coord, COLOR_HAS_FILE)?;
                             } else {
-                                // ‼️ Released a pad that has no file and wasn't recording
+
                                 push2.set_pad_color(coord, COLOR_OFF)?;
                             }
                         }
                         Mode::Edit => {
-                            // ‼️ In edit mode, releasing a pad does nothing.
-                            // ‼️ It stays selected or deselected.
+
+
                         }
                     }
                 }
 
-                // ‼️ --- BUTTON PRESSED (for Mode controls) ---
+
                 Push2Event::ButtonPressed { name, .. } => {
                     match name {
-                        // ‼️ Map Master button to cycling the playback sink
+
                         ControlName::Master => {
                             app_state.playback_sink = match app_state.playback_sink {
                                 PlaybackSink::Default => PlaybackSink::Mixer,
@@ -288,7 +299,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                             };
                             info!("Playback sink set to: {:?}", app_state.playback_sink);
                         }
-                        // ‼️ Map Delete button
+
                         ControlName::Delete => {
                             if app_state.mode == Mode::Edit {
                                 if let Some(key_to_delete) = app_state.selected_for_edit.take() {
@@ -312,7 +323,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                                                     path.display(),
                                                     e
                                                 );
-                                                // ‼️ Set back to "has file" color if delete failed
+
                                                 push2.set_pad_color(coord, COLOR_HAS_FILE)?;
                                             }
                                         }
@@ -330,13 +341,13 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                 }
                 Push2Event::ButtonReleased { name } => {
                     debug!("--- Button {:?} RELEASED ---", name);
-                    // ‼️ Don't turn off Delete button if we are in Edit mode
+
                     if !(name == ControlName::Delete && app_state.mode == Mode::Edit) {
                         push2.set_button_light(name, 0)?;
                     }
                 }
 
-                // ‼️ --- ENCODER TWISTED (for Mode/Param controls) ---
+
                 Push2Event::EncoderTwisted {
                     name, raw_delta, ..
                 } => {
@@ -347,7 +358,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                     };
 
                     match name {
-                        // ‼️ Map Tempo knob to Mode switch
+
                         EncoderName::Tempo => {
                             app_state.mode = match app_state.mode {
                                 Mode::Playback => Mode::Edit,
@@ -355,7 +366,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                             };
                             info!("Mode switched to: {:?}", app_state.mode);
 
-                            // ‼️ If switching away from Edit, deselect pad
+
                             if app_state.mode == Mode::Playback {
                                 if let Some(selected_key) = app_state.selected_for_edit.take() {
                                     if let Some(coord) = push2.button_map.get_note(selected_key) {
@@ -364,12 +375,12 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                                 }
                                 push2.set_button_light(ControlName::Delete, 0)?;
                             } else {
-                                // ‼️ Switched *to* Edit mode
+
                                 push2
                                     .set_button_light(ControlName::Delete, Push2Colors::RED_LED)?;
                             }
                         }
-                        // ‼️ Map Track1 knob to Volume
+
                         EncoderName::Track1 => {
                             if app_state.mode == Mode::Edit {
                                 if let Some(key) = app_state.selected_for_edit {
@@ -384,7 +395,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
                                 }
                             }
                         }
-                        // ‼️ Map Track2 knob to Pitch
+
                         EncoderName::Track2 => {
                             if app_state.mode == Mode::Edit {
                                 if let Some(key) = app_state.selected_for_edit {
@@ -405,7 +416,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
             }
         }
 
-        // ‼️ Yield control back to the tokio runtime
+
         tokio::time::sleep(time::Duration::from_millis(1000 / 60)).await;
     }
 }
