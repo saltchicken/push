@@ -2,17 +2,13 @@ use hound::{SampleFormat, WavReader};
 use image::{ImageBuffer, Rgb};
 use imageproc::drawing::draw_line_segment_mut;
 use std::error::Error;
-
-
-mod soundboard_modules;
-use soundboard_modules::get_audio_storage_path;
+use std::path::PathBuf;
 
 // --- Image Configuration ---
 const IMAGE_WIDTH: u32 = 960;
 const IMAGE_HEIGHT: u32 = 160;
 const BACKGROUND_COLOR: Rgb<u8> = Rgb([20, 20, 20]);
 const WAVEFORM_COLOR: Rgb<u8> = Rgb([100, 255, 150]);
-
 
 fn read_and_normalize_samples(
     mut reader: WavReader<std::io::BufReader<std::fs::File>>,
@@ -21,7 +17,6 @@ fn read_and_normalize_samples(
     let channel_count = spec.channels as usize;
 
     let samples_f32: Vec<f32> = match (spec.sample_format, spec.bits_per_sample) {
-
         (SampleFormat::Float, 32) => reader
             .samples::<f32>()
             .filter_map(Result::ok)
@@ -59,17 +54,25 @@ fn read_and_normalize_samples(
     Ok(samples_f32)
 }
 
+pub fn get_audio_storage_path() -> std::io::Result<PathBuf> {
+    match dirs::audio_dir() {
+        Some(mut path) => {
+            path.push("soundboard-recordings");
+            std::fs::create_dir_all(&path)?;
+            Ok(path)
+        }
+        None => Err(std::io::Error::other("Could not find audio directory")),
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     println!("Generating waveform image...");
-
 
     let audio_storage_path = get_audio_storage_path()?;
     println!("Using audio directory: {}", audio_storage_path.display());
 
-
     let input_wav_path = audio_storage_path.join("test.wav");
     let output_bmp_path = audio_storage_path.join("waveform.bmp");
-
 
     println!("Reading input file: {}", input_wav_path.display());
     let reader = WavReader::open(&input_wav_path).map_err(|e| {
@@ -81,10 +84,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         )
     })?;
 
-
     let normalized_samples = read_and_normalize_samples(reader)?;
     if normalized_samples.is_empty() {
-
         return Err("No valid samples found in WAV file.".into());
     }
 
@@ -128,16 +129,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut img = ImageBuffer::from_pixel(IMAGE_WIDTH, IMAGE_HEIGHT, BACKGROUND_COLOR);
     let mid_y = IMAGE_HEIGHT as f32 / 2.0;
 
-
     for (x, (min, max)) in peaks.iter().enumerate() {
-
         // We subtract from `mid_y` because image Y=0 is the top.
         let y_min_f = mid_y - (*min * mid_y);
         let y_max_f = mid_y - (*max * mid_y);
 
         let y_start = y_max_f.min(y_min_f);
         let y_end = y_max_f.max(y_min_f).max(y_start + 1.0);
-
 
         draw_line_segment_mut(
             &mut img,
@@ -146,7 +144,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             WAVEFORM_COLOR,
         );
     }
-
 
     println!("Saving output file: {}", output_bmp_path.display());
     img.save(&output_bmp_path)?;
@@ -158,3 +155,4 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+

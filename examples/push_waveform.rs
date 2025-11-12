@@ -8,10 +8,19 @@ use embedded_graphics::{
     text::Text,
 };
 use log::{debug, info, trace};
+use std::path::PathBuf;
 use std::{error, fs, thread, time};
 
-mod soundboard_modules;
-use soundboard_modules::get_audio_storage_path;
+pub fn get_audio_storage_path() -> std::io::Result<PathBuf> {
+    match dirs::audio_dir() {
+        Some(mut path) => {
+            path.push("soundboard-recordings");
+            std::fs::create_dir_all(&path)?;
+            Ok(path)
+        }
+        None => Err(std::io::Error::other("Could not find audio directory")),
+    }
+}
 
 const PAD_COLOR_ON: u8 = Push2Colors::GREEN_PALE;
 const BUTTON_LIGHT_ON: u8 = Push2Colors::GREEN_PALE;
@@ -101,3 +110,4 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         thread::sleep(time::Duration::from_millis(1000 / 60));
     }
 }
+
