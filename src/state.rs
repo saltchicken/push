@@ -20,12 +20,18 @@ pub struct ButtonState {
 }
 
 /// Holds the state of a single encoder
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 pub struct EncoderState {
     /// The integrated absolute value.
     pub value: i32,
     // TODO: Add is_touched when touch events are parsed
     // pub is_touched: bool,
+}
+
+impl Default for EncoderState {
+    fn default() -> Self {
+        Self { value: 64 }
+    }
 }
 
 /// The central struct holding the complete state of the Push 2.
@@ -44,10 +50,22 @@ pub struct Push2State {
 impl Push2State {
     /// Creates a new, default state.
     pub fn new() -> Self {
+        let mut encoders = HashMap::new();
+        encoders.insert(EncoderName::Tempo, EncoderState::default());
+        encoders.insert(EncoderName::Swing, EncoderState::default());
+        encoders.insert(EncoderName::Track1, EncoderState::default());
+        encoders.insert(EncoderName::Track2, EncoderState::default());
+        encoders.insert(EncoderName::Track3, EncoderState::default());
+        encoders.insert(EncoderName::Track4, EncoderState::default());
+        encoders.insert(EncoderName::Track5, EncoderState::default());
+        encoders.insert(EncoderName::Track6, EncoderState::default());
+        encoders.insert(EncoderName::Track7, EncoderState::default());
+        encoders.insert(EncoderName::Track8, EncoderState::default());
+        encoders.insert(EncoderName::Master, EncoderState::default());
         Self {
             pads: [[PadState::default(); 8]; 8],
             buttons: HashMap::new(),
-            encoders: HashMap::new(),
+            encoders,
             slider: 0,
         }
     }

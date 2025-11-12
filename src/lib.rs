@@ -3,6 +3,7 @@ pub mod app_config;
 pub mod button_map;
 pub mod colors;
 pub mod display;
+pub mod gui;
 pub mod midi_handler;
 pub mod state;
 
@@ -10,6 +11,7 @@ pub mod state;
 pub use app_config::{AppConfig, ConfigError};
 pub use button_map::{ButtonMap, ButtonMapError, ControlName, EncoderName, PadCoord};
 pub use display::{Push2Display, Push2DisplayError};
+pub use gui::GuiApi;
 pub use midi_handler::{MidiHandler, MidiHandlerError};
 pub use state::Push2State;
 
@@ -24,6 +26,10 @@ use thiserror::Error;
 pub enum Push2Error {
     #[error("Configuration error: {0}")]
     Config(#[from] ConfigError),
+
+    #[cfg(feature = "waveform")]
+    #[error("Waveform error: {0}")]
+    Waveform(#[from] gui::WaveformError),
 
     #[error("Button map error: {0}")]
     ButtonMap(#[from] ButtonMapError),
@@ -106,7 +112,6 @@ impl Push2 {
 
         push2.reset_all_lights()?;
 
-        // ‼️ Return the initialized struct
         Ok(push2)
     }
 
@@ -269,4 +274,3 @@ impl Push2 {
         None
     }
 }
-
