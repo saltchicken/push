@@ -95,14 +95,37 @@ impl Push2 {
 
         let state = Push2State::new();
 
-        Ok(Self {
+        let mut push2 = Self {
             display,
             midi_out: conn_out,
             button_map,
             event_rx: rx,
             _conn_in,
             state,
-        })
+        };
+
+        push2.reset_all_lights()?;
+
+        // ‼️ Return the initialized struct
+        Ok(push2)
+    }
+
+    fn reset_all_lights(&mut self) -> Result<(), Push2Error> {
+        // --- Reset all 64 pads ---
+        // The pads are MIDI notes 36 through 99.
+        for address in 36..=99 {
+            let message = [NOTE_OFF, address, 0];
+            self.midi_out.send(&message)?;
+        }
+
+        // --- Reset all control buttons ---
+        // We can iterate the keys of the control_map to get all button addresses.
+        for address in self.button_map.get_control_addresses() {
+            let message = [CONTROL_CHANGE, *address, 0];
+            self.midi_out.send(&message)?;
+        }
+
+        Ok(())
     }
 
     pub fn set_pad_color(&mut self, coord: PadCoord, color: u8) -> Result<(), Push2Error> {
@@ -246,3 +269,4 @@ impl Push2 {
         None
     }
 }
+

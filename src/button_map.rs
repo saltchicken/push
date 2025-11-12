@@ -145,4 +145,7 @@ impl ButtonMap {
     pub fn get_control_address(&self, name: ControlName) -> Option<u8> {
         self.control_reverse_map.get(&name).copied()
     }
+    pub fn get_control_addresses(&self) -> impl Iterator<Item = &u8> {
+        self.control_map.keys()
+    }
 }
