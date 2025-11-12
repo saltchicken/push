@@ -4,7 +4,6 @@ use std::io;
 use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::process::Command;
-
 /// Defines where audio should be played back.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum PlaybackSink {
@@ -12,14 +11,22 @@ pub enum PlaybackSink {
     Default,
     Mixer,
     Both,
+    None, // ‼️ ADDED
 }
-
 /// Asynchronously plays an audio file through PipeWire.
 pub async fn play_audio_file(
     path: &PathBuf,
     sink_target: PlaybackSink,
     volume: f64,
 ) -> io::Result<()> {
+    // ‼️ Handle the None case first
+    match sink_target {
+        PlaybackSink::None => {
+            println!("...playback sink is None (Muted).");
+            return Ok(());
+        }
+        _ => { /* Continue as normal */ }
+    }
     let player = "pw-play";
     let volume_str = volume.to_string();
     println!(
@@ -32,7 +39,6 @@ pub async fn play_audio_file(
     cmd_default.arg(&volume_str);
     cmd_default.arg(path);
     cmd_default.stdout(Stdio::null()).stderr(Stdio::null());
-
     let mut cmd_mixer = Command::new(player);
     cmd_default.arg("--volume");
     cmd_default.arg(&volume_str);
@@ -40,7 +46,6 @@ pub async fn play_audio_file(
     cmd_mixer.arg("MyMixer");
     cmd_mixer.arg(path);
     cmd_mixer.stdout(Stdio::null()).stderr(Stdio::null());
-
     match sink_target {
         PlaybackSink::Default => {
             println!("...routing playback to Default.");
@@ -64,7 +69,6 @@ pub async fn play_audio_file(
             println!("...routing playback to BOTH Default and MyMixer.");
             let default_handle = tokio::spawn(async move { cmd_default.status().await });
             let mixer_handle = tokio::spawn(async move { cmd_mixer.status().await });
-
             match tokio::try_join!(default_handle, mixer_handle) {
                 Ok((Ok(status_default), Ok(status_mixer))) => {
                     if !status_default.success() {
@@ -89,6 +93,7 @@ pub async fn play_audio_file(
                 }
             }
         }
+        PlaybackSink::None => { /* This is now handled at the top */ }
     }
     println!("Playback successful for sink: {:?}", sink_target);
     Ok(())
