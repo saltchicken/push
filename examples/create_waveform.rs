@@ -120,12 +120,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             let chunk_end = (chunk_start + samples_per_pixel).min(normalized_samples.len());
             let chunk = &normalized_samples[chunk_start..chunk_end];
 
-            let min = chunk.iter().fold(f32::INFINITY, |a, &b| a.min(b));
-            let max = chunk.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b));
+            // ‼️ Find min and max in a single pass
+            let (min, max) = chunk.iter().fold(
+                (f32::INFINITY, f32::NEG_INFINITY), // Start with (min, max)
+                |(current_min, current_max), &sample| {
+                    (current_min.min(sample), current_max.max(sample))
+                },
+            );
+
             (min.min(0.0), max.max(0.0))
         })
-        .collect();
-    // 3. --- Create and Draw on the Image ---
+        .collect(); // 3. --- Create and Draw on the Image ---
     let mut img = ImageBuffer::from_pixel(IMAGE_WIDTH, IMAGE_HEIGHT, BACKGROUND_COLOR);
     let mid_y = IMAGE_HEIGHT as f32 / 2.0;
 
@@ -155,4 +160,3 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-
