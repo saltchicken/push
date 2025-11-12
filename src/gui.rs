@@ -56,7 +56,7 @@ pub trait GuiApi {
     fn draw_encoder_bar(
         &mut self,
         index: u8,
-        value: f32,
+        value: i32,
         color: Bgr565,
     ) -> Result<(), Push2DisplayError>;
 
@@ -120,42 +120,36 @@ impl GuiApi for Push2Display {
     fn draw_encoder_bar(
         &mut self,
         index: u8,
-        value: f32,
+        value: i32,
         color: Bgr565,
     ) -> Result<(), Push2DisplayError> {
         if index > 7 {
             return Ok(()); // Invalid index
         }
-
         // 1. Calculate the *full* bar width (with padding)
         let bar_width_total = ENCODER_REGION_WIDTH - (ENCODER_BAR_PADDING_X * 2);
 
-        // 2. Calculate the *fill* width
-        let fill_value = value.clamp(0.0, 1.0);
-        let fill_width = (bar_width_total as f32 * fill_value) as u32;
+        let fill_value = (value as f32 / 127.0).clamp(0.0, 1.0);
 
+        // 2. Calculate the *fill* width
+        let fill_width = (bar_width_total as f32 * fill_value) as u32;
         if fill_width == 0 {
             return Ok(()); // Nothing to draw
         }
-
         // 3. Calculate position
         let bar_top_left = Point::new(
             (index as u32 * ENCODER_REGION_WIDTH) as i32 + ENCODER_BAR_PADDING_X as i32,
             ENCODER_BAR_Y_POS,
         );
-
         let fill_size = Size::new(fill_width, ENCODER_BAR_HEIGHT);
         let fill_style = PrimitiveStyle::with_fill(color);
-
         Rectangle::new(bar_top_left, fill_size)
             .into_styled(fill_style)
             .draw(self)
             .unwrap(); // Infallible
-
         Ok(())
     }
 
-    // ‼️ Implement the new outline function
     fn draw_encoder_outline(&mut self, index: u8, color: Bgr565) -> Result<(), Push2DisplayError> {
         if index > 7 {
             return Ok(()); // Invalid index

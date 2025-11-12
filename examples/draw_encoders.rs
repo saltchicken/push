@@ -1,3 +1,5 @@
+// ‼️ In examples/draw_encoders.rs
+
 use embedded_graphics::{pixelcolor::Bgr565, prelude::*};
 use log::debug;
 use push2::{GuiApi, Push2, Push2Event, button_map::EncoderName};
@@ -12,26 +14,26 @@ fn main() -> Result<(), Box<dyn Error>> {
     debug!("Connection established.");
 
     // --- 2. State for our 8 track encoders ---
-    // We'll store their normalized values (0.0 to 1.0) here.
-    // --- 3. Initial Draw --let mut track_encoder_values = [
-
+    // ‼️ CHANGE: Store the raw i32 value (0-127)
     let mut track_encoder_values = [
-        push2.state.encoders[&EncoderName::Track1].value as f32 / 127.0,
-        push2.state.encoders[&EncoderName::Track2].value as f32 / 127.0,
-        push2.state.encoders[&EncoderName::Track3].value as f32 / 127.0,
-        push2.state.encoders[&EncoderName::Track4].value as f32 / 127.0,
-        push2.state.encoders[&EncoderName::Track5].value as f32 / 127.0,
-        push2.state.encoders[&EncoderName::Track6].value as f32 / 127.0,
-        push2.state.encoders[&EncoderName::Track7].value as f32 / 127.0,
-        push2.state.encoders[&EncoderName::Track8].value as f32 / 127.0,
+        push2.state.encoders[&EncoderName::Track1].value, // ‼️ REMOVED / 127.0
+        push2.state.encoders[&EncoderName::Track2].value, // ‼️ REMOVED / 127.0
+        push2.state.encoders[&EncoderName::Track3].value, // ‼️ REMOVED / 127.0
+        push2.state.encoders[&EncoderName::Track4].value, // ‼️ REMOVED / 127.0
+        push2.state.encoders[&EncoderName::Track5].value, // ‼️ REMOVED / 127.0
+        push2.state.encoders[&EncoderName::Track6].value, // ‼️ REMOVED / 127.0
+        push2.state.encoders[&EncoderName::Track7].value, // ‼️ REMOVED / 127.0
+        push2.state.encoders[&EncoderName::Track8].value, // ‼️ REMOVED / 127.0
     ];
+
+    // --- 3. Initial Draw ---
     push2.display.clear(Bgr565::BLACK)?;
     for i in 0..8u8 {
         // Draw the empty outline
         push2.display.draw_encoder_outline(i, Bgr565::WHITE)?;
         push2
             .display
-            .draw_encoder_bar(i, track_encoder_values[i as usize], Bgr565::GREEN)?;
+            .draw_encoder_bar(i, track_encoder_values[i as usize], Bgr565::GREEN)?; // ‼️ This now passes an i32
     }
     push2.display.flush()?;
 
@@ -43,6 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // --- 4a. Poll for events ---
         while let Some(event) = push2.poll_event() {
             if let Push2Event::EncoderTwisted { name, value, .. } = event {
+                // ‼️ `value` is the i32 we want
                 // We only care about encoder twists
                 // Match on the encoder name to get an index 0-7
                 let index = match name {
@@ -58,17 +61,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                 };
 
                 if let Some(idx) = index {
-                    // The `value` is 0-127 (from state.rs)
-                    // Normalize it to 0.0-1.0
-                    let normalized_value = value as f32 / 127.0;
+                    // ‼️ `value` is already 0-127, no normalization needed here
+                    // let normalized_value = value as f32 / 127.0; // ‼️ REMOVED
 
-                    // Check if the value actually changed to avoid needless redraws
-                    if track_encoder_values[idx as usize] != normalized_value {
-                        track_encoder_values[idx as usize] = normalized_value;
+                    // ‼️ CHANGE: Compare i32 to i32
+                    if track_encoder_values[idx as usize] != value {
+                        track_encoder_values[idx as usize] = value; // ‼️ Store the i32
                         needs_redraw = true;
                         debug!(
-                            "Encoder {} ({:?}) updated to: {:.2}",
-                            idx, name, normalized_value
+                            "Encoder {} ({:?}) updated to: {}", // ‼️ Updated log format
+                            idx, name, value
                         );
                     }
                 }
@@ -88,7 +90,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 // Draw the filled bar
                 push2.display.draw_encoder_bar(
                     i,
-                    track_encoder_values[i as usize],
+                    track_encoder_values[i as usize], // ‼️ This now passes an i32
                     Bgr565::GREEN,
                 )?;
             }
