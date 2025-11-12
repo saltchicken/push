@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 // Draw the filled bar
                 push2.display.draw_encoder_bar(
                     i,
-                    track_encoder_values[i as usize], // ‼️ This now passes an i32
+                    track_encoder_values[i as usize],
                     Bgr565::GREEN,
                 )?;
             }
