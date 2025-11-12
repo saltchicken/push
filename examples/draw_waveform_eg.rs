@@ -120,42 +120,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         })
         .collect();
 
-    // --- 4. Draw to Display using embedded-graphics ---
-    info!("Drawing waveform to Push 2 display...");
-    push2.display.clear(BACKGROUND_COLOR)?;
-
-    // This is the new drawing logic using embedded_graphics::Line
+    // --- 4. Prepare drawing variables (outside loop) ---
     let mid_y = image_height as f32 / 2.0;
     let line_style = PrimitiveStyle::with_stroke(WAVEFORM_COLOR, 1);
 
-    for (x, (min, max)) in peaks.iter().enumerate() {
-        // We subtract from `mid_y` because image Y=0 is the top.
-        let y_min_f = mid_y - (*min * mid_y); // y for negative peak
-        let y_max_f = mid_y - (*max * mid_y); // y for positive peak
+    info!("Waveform calculated. Starting render loop...");
 
-        // Get the top-most and bottom-most pixel coordinates
-        let y_start_f = y_max_f.min(y_min_f);
-        let y_end_f = y_max_f.max(y_min_f);
-
-        // Convert to i32 for `Point`
-        let x_i = x as i32;
-        let y_start_i = y_start_f.round() as i32;
-        // Ensure the line is at least 1 pixel tall
-        let y_end_i = (y_end_f.round() as i32).max(y_start_i);
-
-        // Draw the vertical line for this chunk
-        Line::new(Point::new(x_i, y_start_i), Point::new(x_i, y_end_i))
-            .into_styled(line_style)
-            .draw(&mut push2.display)?;
-    }
-
-    // --- 5. Flush buffer to hardware ---
-    push2.display.flush()?;
-    info!("Waveform drawn. Press pads or Ctrl-C to quit.");
-
-    // --- 6. Keep program alive ---
-    // (Copied from push_example.rs)
+    // --- 5. Main Loop ---
     loop {
+        // ‼️ Handle events first
         while let Some(event) = push2.poll_event() {
             match event {
                 Push2Event::PadPressed { coord, .. } => {
@@ -169,7 +142,38 @@ fn main() -> Result<(), Box<dyn Error>> {
                 _ => {} // Ignore other events
             }
         }
-        // Don't spin the CPU
+
+        // ‼️ --- REDRAW LOGIC (MOVED INSIDE LOOP) --- ‼️
+
+        // ‼️ 1. Clear the display every frame
+        push2.display.clear(BACKGROUND_COLOR)?;
+
+        // ‼️ 2. Redraw the waveform every frame
+        for (x, (min, max)) in peaks.iter().enumerate() {
+            // We subtract from `mid_y` because image Y=0 is the top.
+            let y_min_f = mid_y - (*min * mid_y); // y for negative peak
+            let y_max_f = mid_y - (*max * mid_y); // y for positive peak
+
+            // Get the top-most and bottom-most pixel coordinates
+            let y_start_f = y_max_f.min(y_min_f);
+            let y_end_f = y_max_f.max(y_min_f);
+
+            // Convert to i32 for `Point`
+            let x_i = x as i32;
+            let y_start_i = y_start_f.round() as i32;
+            // Ensure the line is at least 1 pixel tall
+            let y_end_i = (y_end_f.round() as i32).max(y_start_i);
+
+            // Draw the vertical line for this chunk
+            Line::new(Point::new(x_i, y_start_i), Point::new(x_i, y_end_i))
+                .into_styled(line_style)
+                .draw(&mut push2.display)?;
+        }
+
+        // ‼️ 3. Flush the buffer every frame to keep the screen alive
+        push2.display.flush()?;
+
+        // ‼️ 4. Sleep to main_loop ~60 FPS
         thread::sleep(time::Duration::from_millis(16));
     }
 }
